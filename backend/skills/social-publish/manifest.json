@@ -1,0 +1,7 @@
+{
+  "slug": "social-publish",
+  "name": "Social Publish",
+  "version": "1.0.0",
+  "allowed_roles": ["social", "cmo", "copywriter"],
+  "description": "Queue live posts to Reddit, X, LinkedIn, Facebook, and Instagram after connectors are linked."
+}

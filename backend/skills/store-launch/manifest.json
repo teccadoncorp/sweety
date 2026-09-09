@@ -1,0 +1,11 @@
+{
+  "slug": "store-launch",
+  "name": "Store Launch",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "cmo",
+    "lifecycle",
+    "designer"
+  ],
+  "description": "Checklist a store or drop launch across channels."
+}

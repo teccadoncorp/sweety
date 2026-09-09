@@ -1,0 +1,7 @@
+{
+  "slug": "visual-studio",
+  "name": "Visual Studio",
+  "version": "1.0.0",
+  "allowed_roles": ["copywriter", "social", "cmo"],
+  "description": "Generate campaign images via OpenRouter and avatar videos via HeyGen."
+}

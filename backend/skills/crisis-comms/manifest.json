@@ -1,0 +1,11 @@
+{
+  "slug": "crisis-comms",
+  "name": "Crisis Comms",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "pr",
+    "cmo",
+    "community"
+  ],
+  "description": "Draft holding statements and escalation paths. Never post live unaided."
+}

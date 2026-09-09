@@ -1,0 +1,11 @@
+{
+  "slug": "customer-voice",
+  "name": "Customer Voice",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "analyst",
+    "strategist",
+    "crm"
+  ],
+  "description": "Synthesize reviews and interviews into language the brand can use."
+}

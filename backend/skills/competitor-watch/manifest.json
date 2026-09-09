@@ -1,0 +1,12 @@
+{
+  "slug": "competitor-watch",
+  "name": "Competitor Watch",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "strategist",
+    "analyst",
+    "cmo",
+    "pr"
+  ],
+  "description": "Scan competitors and summarize threats, gaps, and moves."
+}

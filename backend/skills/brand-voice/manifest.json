@@ -1,0 +1,7 @@
+{
+  "slug": "brand-voice",
+  "name": "Brand Voice",
+  "version": "1.0.0",
+  "allowed_roles": ["cmo", "strategist", "copywriter", "social", "seo"],
+  "description": "Extract and apply brand voice, tone, and messaging pillars."
+}

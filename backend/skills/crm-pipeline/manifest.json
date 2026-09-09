@@ -1,0 +1,12 @@
+{
+  "slug": "crm-pipeline",
+  "name": "CRM Pipeline",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "crm",
+    "lifecycle",
+    "cmo",
+    "analyst"
+  ],
+  "description": "Score leads, log touches, and move deals with CRM tools."
+}

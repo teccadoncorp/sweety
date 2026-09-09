@@ -1,0 +1,11 @@
+{
+  "slug": "paid-media",
+  "name": "Paid Media",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "media",
+    "analyst",
+    "cmo"
+  ],
+  "description": "Plan paid mix, audiences, budgets, and creative tests without spending live."
+}

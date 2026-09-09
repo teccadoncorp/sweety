@@ -1,0 +1,11 @@
+{
+  "slug": "podcast-brief",
+  "name": "Podcast Brief",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "video",
+    "pr",
+    "cmo"
+  ],
+  "description": "Write guest briefs, talking tracks, and clip plans."
+}

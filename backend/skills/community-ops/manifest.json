@@ -1,0 +1,11 @@
+{
+  "slug": "community-ops",
+  "name": "Community Ops",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "community",
+    "social",
+    "cmo"
+  ],
+  "description": "Draft replies, rituals, and moderation notes that stay on-brand."
+}

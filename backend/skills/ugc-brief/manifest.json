@@ -1,0 +1,11 @@
+{
+  "slug": "ugc-brief",
+  "name": "UGC Brief",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "social",
+    "designer",
+    "cmo"
+  ],
+  "description": "Brief creators for UGC: hook, product proof, and usage rights."
+}

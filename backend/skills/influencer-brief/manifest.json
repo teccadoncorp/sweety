@@ -1,0 +1,11 @@
+{
+  "slug": "influencer-brief",
+  "name": "Influencer Brief",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "social",
+    "pr",
+    "cmo"
+  ],
+  "description": "Write creator briefs with talking points, usage rights, and deliverables."
+}

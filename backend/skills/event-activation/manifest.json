@@ -1,0 +1,11 @@
+{
+  "slug": "event-activation",
+  "name": "Event Activation",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "pr",
+    "lifecycle",
+    "cmo"
+  ],
+  "description": "Plan event moments, capture, and follow-up plays."
+}

@@ -1,0 +1,7 @@
+{
+  "slug": "campaign-brief",
+  "name": "Campaign Brief",
+  "version": "1.0.0",
+  "allowed_roles": ["cmo", "strategist", "analyst"],
+  "description": "Turn a campaign goal into strategy, channel mix, and a delegated task tree."
+}

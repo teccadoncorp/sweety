@@ -1,0 +1,12 @@
+{
+  "slug": "landing-page",
+  "name": "Landing Page",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "copywriter",
+    "designer",
+    "seo",
+    "cmo"
+  ],
+  "description": "Structure landing pages: promise, proof, offer, and CTA."
+}

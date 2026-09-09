@@ -1,0 +1,11 @@
+{
+  "slug": "faq-voice",
+  "name": "FAQ Voice",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "copywriter",
+    "community",
+    "cmo"
+  ],
+  "description": "Turn objections into on-brand FAQs and reply macros."
+}

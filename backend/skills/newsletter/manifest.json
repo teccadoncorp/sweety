@@ -1,0 +1,11 @@
+{
+  "slug": "newsletter",
+  "name": "Newsletter",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "email",
+    "copywriter",
+    "cmo"
+  ],
+  "description": "Plan and draft newsletters with a single sharp idea per issue."
+}

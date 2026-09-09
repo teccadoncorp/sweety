@@ -1,0 +1,11 @@
+{
+  "slug": "ads-creative",
+  "name": "Ads Creative",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "media",
+    "designer",
+    "copywriter"
+  ],
+  "description": "Pair hooks, bodies, and platform-correct visuals for ads."
+}

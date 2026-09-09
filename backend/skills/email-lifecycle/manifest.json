@@ -1,0 +1,12 @@
+{
+  "slug": "email-lifecycle",
+  "name": "Email Lifecycle",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "email",
+    "lifecycle",
+    "cmo",
+    "copywriter"
+  ],
+  "description": "Design welcome, nurture, and win-back email sequences as artifacts."
+}

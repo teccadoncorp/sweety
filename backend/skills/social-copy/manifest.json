@@ -1,0 +1,7 @@
+{
+  "slug": "social-copy",
+  "name": "Social Copy",
+  "version": "1.0.0",
+  "allowed_roles": ["copywriter", "social"],
+  "description": "Write platform-specific social drafts as artifacts."
+}

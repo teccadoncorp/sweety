@@ -1,0 +1,11 @@
+{
+  "slug": "localization",
+  "name": "Localization",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "copywriter",
+    "cmo",
+    "strategist"
+  ],
+  "description": "Adapt copy for markets without flattening the brand voice."
+}

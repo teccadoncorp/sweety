@@ -1,0 +1,12 @@
+{
+  "slug": "retention-play",
+  "name": "Retention Play",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "lifecycle",
+    "email",
+    "crm",
+    "cmo"
+  ],
+  "description": "Design activation and win-back plays across CRM and email."
+}

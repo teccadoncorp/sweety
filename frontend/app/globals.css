@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #e8eefc;
+  background: #070b14;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1000px 480px at 8% -10%, rgba(139, 109, 255, 0.18), transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, rgba(76, 201, 240, 0.12), transparent 50%),
+    #070b14;
+}
+
+.card {
+  @apply rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_-32px_rgba(0,0,0,0.8)] backdrop-blur;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition;
+}
+
+.btn-primary {
+  @apply btn bg-violet text-white hover:bg-violet/90;
+}
+
+.btn-ghost {
+  @apply btn border border-white/15 bg-white/5 hover:bg-white/10;
+}
+
+.field {
+  @apply w-full rounded-xl border border-white/15 bg-void/60 px-3 py-2 text-sm text-ink outline-none placeholder:text-clay/70 focus:border-cyan/60;
+}
+
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.progress-indeterminate {
+  width: 40%;
+  animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 109, 255, 0.4) transparent;
+}
+
+.hud-glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 40px rgba(76, 201, 240, 0.08);
+}
+
+.signal-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4cc9f0, #8b6dff, #34d399);
+}
+
+.crm-kanban {
+  min-width: 180px;
+}
+
+.scanline {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(76, 201, 240, 0.03) 4px
+  );
+}

@@ -1,0 +1,11 @@
+{
+  "slug": "content-calendar",
+  "name": "Content Calendar",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "social",
+    "copywriter",
+    "cmo"
+  ],
+  "description": "Build a two-week calendar with platforms, ratios, and owners."
+}

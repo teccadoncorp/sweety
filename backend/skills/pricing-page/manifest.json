@@ -1,0 +1,11 @@
+{
+  "slug": "pricing-page",
+  "name": "Pricing Page",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "copywriter",
+    "strategist",
+    "cmo"
+  ],
+  "description": "Structure pricing narrative, tiers, and objection handling."
+}

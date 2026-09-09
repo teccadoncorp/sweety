@@ -1,0 +1,11 @@
+{
+  "slug": "video-script",
+  "name": "Video Script",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "video",
+    "copywriter",
+    "social"
+  ],
+  "description": "Write short-form scripts, shot lists, and HeyGen briefs."
+}

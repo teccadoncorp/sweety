@@ -1,0 +1,7 @@
+{
+  "slug": "research-web",
+  "name": "Web Research",
+  "version": "1.0.0",
+  "allowed_roles": ["cmo", "strategist", "seo", "analyst", "social"],
+  "description": "Search the public internet and turn findings into cited artifacts."
+}

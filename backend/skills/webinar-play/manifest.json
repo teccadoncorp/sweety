@@ -1,0 +1,11 @@
+{
+  "slug": "webinar-play",
+  "name": "Webinar Play",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "lifecycle",
+    "email",
+    "cmo"
+  ],
+  "description": "Plan webinar funnel: invite, run-of-show, and follow-up."
+}

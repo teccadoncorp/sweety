@@ -1,0 +1,11 @@
+{
+  "slug": "partnership-dev",
+  "name": "Partnership Dev",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "pr",
+    "cmo",
+    "crm"
+  ],
+  "description": "Map partner targets, offers, and co-marketing one-pagers."
+}

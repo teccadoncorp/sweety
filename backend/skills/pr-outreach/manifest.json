@@ -1,0 +1,11 @@
+{
+  "slug": "pr-outreach",
+  "name": "PR Outreach",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "pr",
+    "cmo",
+    "strategist"
+  ],
+  "description": "Build media lists, pitches, and embargo notes for board approval."
+}

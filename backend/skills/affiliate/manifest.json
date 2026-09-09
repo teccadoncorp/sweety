@@ -1,0 +1,11 @@
+{
+  "slug": "affiliate",
+  "name": "Affiliate",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "media",
+    "crm",
+    "cmo"
+  ],
+  "description": "Design partner/affiliate offers, tracking notes, and creative."
+}

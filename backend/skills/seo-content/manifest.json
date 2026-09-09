@@ -1,0 +1,11 @@
+{
+  "slug": "seo-content",
+  "name": "SEO Content",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "seo",
+    "strategist",
+    "copywriter"
+  ],
+  "description": "Turn keyword research into outlines, titles, and on-page briefs."
+}

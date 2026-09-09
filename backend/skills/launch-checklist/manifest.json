@@ -1,0 +1,11 @@
+{
+  "slug": "launch-checklist",
+  "name": "Launch Checklist",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "cmo",
+    "lifecycle",
+    "strategist"
+  ],
+  "description": "Turn a launch into a sequenced, owner-assigned checklist."
+}

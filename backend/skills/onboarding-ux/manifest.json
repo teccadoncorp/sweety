@@ -1,0 +1,11 @@
+{
+  "slug": "onboarding-ux",
+  "name": "Onboarding UX",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "lifecycle",
+    "designer",
+    "copywriter"
+  ],
+  "description": "Map first-run copy and screens that activate a new user."
+}

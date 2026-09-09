@@ -1,0 +1,11 @@
+{
+  "slug": "ab-test",
+  "name": "A/B Test",
+  "version": "1.0.0",
+  "allowed_roles": [
+    "analyst",
+    "media",
+    "cmo"
+  ],
+  "description": "Design experiments with hypothesis, variants, and success metrics."
+}
