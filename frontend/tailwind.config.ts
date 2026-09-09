@@ -15,8 +15,8 @@ const config: Config = {
         moss: "#34d399",
       },
       fontFamily: {
-        serif: ["Fraunces", "Georgia", "serif"],
-        sans: ["Outfit", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
     },
   },

@@ -50,24 +50,24 @@ export default function BrandsPage() {
   return (
     <Shell>
       <p className="text-sm uppercase tracking-[0.18em] text-cyan">Portfolio</p>
-      <h1 className="mt-1 font-serif text-5xl">Brands</h1>
+      <h1 className="mt-1 font-serif text-3xl sm:text-4xl lg:text-5xl">Brands</h1>
       {isLoading && <div className="mt-8"><WorkInline label="Loading brands" /></div>}
       <div className="mt-10 grid gap-6 md:grid-cols-2">
         {brands.map((brand) => (
-          <Link key={brand.id} href={`/brands/${brand.id}/godmode`} className="card block p-6 hover:bg-white/[0.07]">
+          <Link key={brand.id} href={`/brands/${brand.id}/godmode`} className="card block min-w-0 p-6 hover:bg-white/[0.07]">
             <div className="flex items-start gap-4">
               {brand.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={brand.logo_url} alt="" className="h-12 w-12 rounded-xl object-cover" />
+                <img src={brand.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet/20 font-serif text-xl">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet/20 font-serif text-xl">
                   {brand.name.slice(0, 1)}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-serif text-3xl">{brand.name}</h2>
-                  <span className="text-sm text-clay">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h2 className="min-w-0 break-words font-serif text-2xl sm:text-3xl">{brand.name}</h2>
+                  <span className="shrink-0 text-sm text-clay">
                     {money(brand.spent_usd)} / {money(brand.monthly_budget_usd)}
                   </span>
                 </div>

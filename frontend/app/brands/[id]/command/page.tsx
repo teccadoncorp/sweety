@@ -14,7 +14,8 @@ export default function CommandPage() {
   const { data } = useQuery({
     queryKey: ["command", id],
     queryFn: () => api<CommandSnapshot>(`/brands/${id}/command`),
-    refetchInterval: 3000,
+    refetchInterval: 8000,
+    refetchIntervalInBackground: false,
   });
   const swarm = useMutation({
     mutationFn: () => api<SwarmQueued>(`/brands/${id}/agents/wake-all`, { method: "POST" }),
@@ -39,7 +40,7 @@ export default function CommandPage() {
       )}
       <p className="text-xs uppercase tracking-[0.28em] text-cyan">Mission control</p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-serif text-5xl">Command radar</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">Command radar</h1>
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary" onClick={() => swarm.mutate()}>
             Wake all
@@ -54,27 +55,27 @@ export default function CommandPage() {
       </div>
       {swarm.data && <p className="mt-3 text-sm text-moss">{swarm.data.queued} agents queued</p>}
 
-      <section className="mt-8 grid gap-3 md:grid-cols-4">
+      <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ["Live runs", data?.live_runs ?? 0],
           ["Open tasks", data?.ready_tasks ?? 0],
           ["Approvals", data?.pending_approvals ?? 0],
           ["Hot CRM", data?.crm_hot ?? 0],
         ].map(([label, value]) => (
-          <div key={String(label)} className="hud-glow card p-4">
+          <div key={String(label)} className="hud-glow card min-w-0 p-4">
             <div className="text-[11px] uppercase tracking-[0.18em] text-clay">{label}</div>
-            <div className="mt-2 font-serif text-4xl text-cyan">{value}</div>
+            <div className="mt-2 font-serif text-3xl text-cyan sm:text-4xl">{value}</div>
             <div className="signal-bar mt-3" />
           </div>
         ))}
       </section>
 
-      <section className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {agents.map((agent) => (
-          <article key={agent.id} className={`card p-5 ${agent.live ? "border-cyan/40" : ""}`}>
+          <article key={agent.id} className={`card min-w-0 p-5 ${agent.live ? "border-cyan/40" : ""}`}>
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <Link href={`/brands/${id}/agents/${agent.id}`} className="font-serif text-2xl">
+              <div className="min-w-0">
+                <Link href={`/brands/${id}/agents/${agent.id}`} className="break-words font-serif text-xl sm:text-2xl">
                   {agent.title}
                 </Link>
                 <p className="text-xs uppercase tracking-wide text-clay">{agent.role}</p>

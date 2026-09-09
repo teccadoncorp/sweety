@@ -24,13 +24,13 @@ export function Shell({
   const navClass = (active: boolean) => (active ? "text-cyan" : "text-clay hover:text-ink");
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-void/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/brands" className="font-serif text-2xl tracking-tight text-ink">
+    <div className="flex min-h-dvh flex-col overflow-x-hidden">
+      <header className="sticky top-0 z-20 shrink-0 border-b border-white/10 bg-void/80 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link href="/brands" className="shrink-0 font-serif text-xl tracking-tight text-ink sm:text-2xl">
             Sweety
           </Link>
-          <nav className="flex flex-wrap items-center gap-5 text-sm">
+          <nav className="flex min-w-0 flex-1 items-center justify-end gap-3 overflow-x-auto whitespace-nowrap pb-0.5 text-xs sm:gap-4 sm:text-sm">
             <Link className={navClass(pathname === "/brands")} href="/brands">
               Brands
             </Link>
@@ -74,7 +74,15 @@ export function Shell({
           </nav>
         </div>
       </header>
-      <main className={full ? "h-[calc(100vh-72px)]" : "mx-auto max-w-6xl px-6 py-10"}>{children}</main>
+      <main
+        className={
+          full
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+            : "mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8"
+        }
+      >
+        {children}
+      </main>
     </div>
   );
 }

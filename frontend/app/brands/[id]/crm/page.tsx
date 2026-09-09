@@ -29,6 +29,7 @@ export default function CrmPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [qDebounced, setQDebounced] = useState("");
   const [temp, setTemp] = useState("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -39,13 +40,19 @@ export default function CrmPage() {
   const [note, setNote] = useState("");
   const [nextAction, setNextAction] = useState("");
 
+  useEffect(() => {
+    const t = setTimeout(() => setQDebounced(q), 280);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data: board, isLoading } = useQuery({
     queryKey: ["crm-board", id],
     queryFn: () => api<CrmBoard>(`/brands/${id}/crm/board`),
   });
   const { data: contacts = [] } = useQuery({
-    queryKey: ["crm-contacts", id, q],
-    queryFn: () => api<CrmContact[]>(`/brands/${id}/crm/contacts${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+    queryKey: ["crm-contacts", id, qDebounced],
+    queryFn: () =>
+      api<CrmContact[]>(`/brands/${id}/crm/contacts${qDebounced ? `?q=${encodeURIComponent(qDebounced)}` : ""}`),
   });
   const { data: deals = [] } = useQuery({
     queryKey: ["crm-deals", id],
@@ -189,7 +196,7 @@ export default function CrmPage() {
 
   return (
     <Shell brandId={id} full>
-      <div className="scanline h-full overflow-auto px-6 py-8">
+      <div className="scanline min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6">
         <RunningWork brandId={id} />
         {isLoading && <WorkInline label="Booting signal lattice" />}
         {busy && <WorkLoader label="Updating lattice" />}
@@ -198,7 +205,7 @@ export default function CrmPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-cyan">Neural CRM</p>
-              <h1 className="mt-1 font-serif text-5xl">Signal lattice</h1>
+              <h1 className="mt-1 font-serif text-3xl sm:text-4xl lg:text-5xl">Signal lattice</h1>
               <p className="mt-2 max-w-xl text-sm text-ink/60">
                 Live pipeline, heat, and next actions. Agents write here too — wake the CRM steward from Org.
               </p>
@@ -213,7 +220,7 @@ export default function CrmPage() {
             </div>
           </div>
 
-          <section className="mt-8 grid gap-3 md:grid-cols-6">
+          <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {[
               ["Contacts", board?.contacts ?? 0],
               ["Accounts", board?.accounts ?? 0],
@@ -245,8 +252,8 @@ export default function CrmPage() {
             </section>
           )}
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[340px_1fr_280px]">
-            <section className="card p-5">
+          <div className="mt-10 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)_minmax(0,280px)]">
+            <section className="card min-w-0 p-5">
               <div className="flex items-center justify-between">
                 <h2 className="font-serif text-2xl">Constellation</h2>
                 <span className="text-xs text-clay">avg {Math.round(board?.avg_signal || 0)}</span>
@@ -311,7 +318,7 @@ export default function CrmPage() {
               </form>
             </section>
 
-            <section>
+            <section className="min-w-0">
               <h2 className="font-serif text-2xl">Pipeline warp</h2>
               <div className="mt-4 flex gap-3 overflow-x-auto pb-3">
                 {STAGES.map((stage) => (
@@ -368,7 +375,7 @@ export default function CrmPage() {
               </form>
             </section>
 
-            <aside className="card p-5">
+            <aside className="card min-w-0 p-5">
               <h2 className="font-serif text-2xl">{person ? person.name : "Trace"}</h2>
               {person ? (
                 <div className="mt-3 space-y-2 text-sm">

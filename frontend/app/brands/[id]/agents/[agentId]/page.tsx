@@ -17,8 +17,9 @@ export default function AgentPage() {
   });
   const { data: runs = [] } = useQuery({
     queryKey: ["runs", id, agentId],
-    queryFn: () => api<Run[]>(`/brands/${id}/runs?agent_id=${agentId}`),
-    refetchInterval: 4000,
+    queryFn: () => api<Run[]>(`/brands/${id}/runs?agent_id=${agentId}&include_heavy=true`),
+    refetchInterval: 8000,
+    refetchIntervalInBackground: false,
   });
   const { data: skills = [] } = useQuery({
     queryKey: ["skills"],
@@ -42,7 +43,7 @@ export default function AgentPage() {
       </Link>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-5xl">{agent?.title}</h1>
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">{agent?.title}</h1>
           <p className="mt-2 text-ink/60">
             {agent?.role} · {agent?.adapter} · {agent?.model}
           </p>

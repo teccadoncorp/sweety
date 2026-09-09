@@ -12,17 +12,22 @@ from app.schemas.common import AgentIn, AgentOut, AgentUpdate, HeartbeatQueued
 from app.schemas.crm import SwarmQueued
 from app.schemas.ops import ModelBroadcastIn, OrgPresetOut
 from app.services.access import get_agent_in_brand, get_brand_for_user
-from app.services.budget import spent_for_agent
+from app.services.budget import spent_for_agent, spent_map_for_agents
 from app.services.seed import DEFAULT_ORG, ensure_default_org
 from app.workers.heartbeat import run_agent_heartbeat
 
 router = APIRouter(prefix="/brands/{brand_id}/agents", tags=["agents"])
 
 
-def _out(db: Session, agent: Agent) -> AgentOut:
+def _out(db: Session, agent: Agent, spent=None) -> AgentOut:
     data = AgentOut.model_validate(agent)
-    data.spent_usd = spent_for_agent(db, agent.id)
+    data.spent_usd = spent if spent is not None else spent_for_agent(db, agent.id)
     return data
+
+
+def _many(db: Session, rows: list[Agent]) -> list[AgentOut]:
+    spent = spent_map_for_agents(db, [a.id for a in rows])
+    return [_out(db, a, spent.get(a.id)) for a in rows]
 
 
 @router.get("", response_model=list[AgentOut])
@@ -30,8 +35,8 @@ def list_agents(
     brand_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> list[AgentOut]:
     get_brand_for_user(db, brand_id, user.id)
-    rows = db.scalars(select(Agent).where(Agent.brand_id == brand_id)).all()
-    return [_out(db, a) for a in rows]
+    rows = list(db.scalars(select(Agent).where(Agent.brand_id == brand_id)).all())
+    return _many(db, rows)
 
 
 @router.post("/expand", response_model=list[AgentOut])
@@ -41,7 +46,7 @@ def expand_org(
     brand = get_brand_for_user(db, brand_id, user.id)
     agents = ensure_default_org(db, brand)
     db.commit()
-    return [_out(db, a) for a in agents]
+    return _many(db, agents)
 
 
 @router.post("/wake-all", response_model=SwarmQueued)
@@ -70,7 +75,7 @@ def apply_presets(
         if spec.get("prompt"):
             agent.system_prompt = spec["prompt"]
     db.commit()
-    return [_out(db, a) for a in rows]
+    return _many(db, rows)
 
 
 @router.post("/broadcast-model", response_model=list[AgentOut])
@@ -87,7 +92,7 @@ def broadcast_model(
         for agent in rows:
             agent.model = model
         db.commit()
-    return [_out(db, a) for a in rows]
+    return _many(db, rows)
 
 
 @router.get("/presets", response_model=list[OrgPresetOut])

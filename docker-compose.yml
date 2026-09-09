@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   redis:
     image: redis:7-alpine
@@ -23,7 +23,7 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   api:
     build:
@@ -40,14 +40,14 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app
 
   worker:
     build:
       context: ./backend
-    command: celery -A app.core.celery_app worker --loglevel=INFO --concurrency=6
+    command: celery -A app.core.celery_app worker --loglevel=INFO --concurrency=3
     env_file:
       - .env
     environment:
@@ -100,16 +100,15 @@ services:
   web:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ""
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NODE_ENV: production
     depends_on:
       - api
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - web_node_modules:/app/node_modules
+      - "127.0.0.1:3000:3000"
 
 volumes:
   sweety_pg:
-  web_node_modules:

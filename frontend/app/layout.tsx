@@ -1,23 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, Outfit } from "next/font/google";
 import { Providers } from "@/lib/providers";
 import "./globals.css";
+
+const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
+const serif = Fraunces({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
   title: "Sweety — marketing control plane",
   description: "A board for your marketing agents.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#070b14",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,680&family=Outfit:wght@380;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

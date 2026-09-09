@@ -71,8 +71,8 @@ export default function GodModePage() {
 
   return (
     <Shell brandId={id} full>
-      <div className="mx-auto flex h-full max-w-3xl flex-col px-4">
-        <div className="border-b border-white/10 py-4">
+      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-3xl flex-1 flex-col px-3 sm:px-4">
+        <div className="shrink-0 border-b border-white/10 py-4">
           <p className="text-xs uppercase tracking-[0.2em] text-cyan">CMO God Mode</p>
           <h1 className="font-serif text-3xl">{brand?.name || "Brief the CMO"}</h1>
           <p className="mt-1 text-sm text-clay">
@@ -80,7 +80,7 @@ export default function GodModePage() {
           </p>
         </div>
 
-        <div className="chat-scroll flex-1 space-y-4 overflow-y-auto py-6">
+        <div className="chat-scroll min-h-0 flex-1 space-y-4 overflow-y-auto py-4 sm:py-6">
           {isLoading && <WorkInline label="Loading conversation" />}
           {!isLoading && messages.length === 0 && (
             <div className="rounded-3xl border border-dashed border-white/15 p-8 text-center">
@@ -105,8 +105,8 @@ export default function GodModePage() {
                 key={m.id}
                 className={
                   m.role === "user"
-                    ? "ml-12 rounded-2xl bg-violet/20 px-4 py-3"
-                    : "mr-8 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                    ? "ml-2 rounded-2xl bg-violet/20 px-4 py-3 sm:ml-12"
+                    : "mr-2 min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:mr-8"
                 }
               >
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-clay">
@@ -137,7 +137,7 @@ export default function GodModePage() {
           <div ref={bottom} />
         </div>
 
-        <form onSubmit={onSubmit} className="border-t border-white/10 py-4">
+        <form onSubmit={onSubmit} className="shrink-0 border-t border-white/10 py-4">
           <div className="mb-2 flex flex-wrap gap-2">
             {PLATFORMS.map((p) => (
               <button

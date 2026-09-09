@@ -42,7 +42,7 @@ function SettingsBody() {
   return (
     <Shell>
       <p className="text-sm uppercase tracking-[0.18em] text-clay">Board</p>
-      <h1 className="mt-1 font-serif text-5xl">Settings</h1>
+      <h1 className="mt-1 font-serif text-3xl sm:text-4xl lg:text-5xl">Settings</h1>
       {connected && (
         <p className="mt-3 text-sm text-moss">Connected {connected}. Pick a Page if this was Facebook / Instagram.</p>
       )}

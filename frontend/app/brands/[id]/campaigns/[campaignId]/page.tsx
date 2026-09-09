@@ -52,7 +52,7 @@ export default function CampaignPage() {
       </Link>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-5xl">{campaign?.name}</h1>
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">{campaign?.name}</h1>
           <p className="mt-3 max-w-2xl text-ink/70">{campaign?.goal}</p>
         </div>
         <div className="flex items-center gap-2">

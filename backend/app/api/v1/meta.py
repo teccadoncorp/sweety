@@ -11,7 +11,7 @@ from app.models.agent import Agent
 from app.models.user import User
 from app.schemas.common import AdapterHealthOut, SkillOut, UsageOut
 from app.services.access import get_brand_for_user
-from app.services.budget import spent_for_agent, spent_for_brand
+from app.services.budget import spent_for_brand, spent_map_for_agents
 from app.services.heartbeat import adapter_health
 from app.services.skills import load_all_skills
 
@@ -42,7 +42,8 @@ def brand_usage(
     brand_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> UsageOut:
     brand = get_brand_for_user(db, brand_id, user.id)
-    agents = db.scalars(select(Agent).where(Agent.brand_id == brand_id)).all()
+    agents = list(db.scalars(select(Agent).where(Agent.brand_id == brand_id)).all())
+    spent = spent_map_for_agents(db, [a.id for a in agents])
     return UsageOut(
         brand_spent_usd=spent_for_brand(db, brand.id),
         brand_budget_usd=brand.monthly_budget_usd,
@@ -51,7 +52,7 @@ def brand_usage(
                 "agent_id": str(a.id),
                 "title": a.title,
                 "role": a.role,
-                "spent_usd": str(spent_for_agent(db, a.id)),
+                "spent_usd": str(spent.get(a.id, 0)),
                 "budget_usd": str(a.monthly_budget_usd),
             }
             for a in agents

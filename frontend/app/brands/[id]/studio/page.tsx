@@ -87,7 +87,7 @@ export default function StudioPage() {
         <WorkLoader label={swarm.isPending ? "Waking swarm" : "Saving studio"} />
       )}
       <p className="text-xs uppercase tracking-[0.24em] text-cyan">Configure</p>
-      <h1 className="mt-1 font-serif text-5xl">Agent studio</h1>
+      <h1 className="mt-1 font-serif text-3xl sm:text-4xl lg:text-5xl">Agent studio</h1>
       <p className="mt-3 max-w-2xl text-sm text-ink/65">
         Toggle skills per role. Cyan = on. Violet outline = recommended for that role. Apply presets to load the default pack in one click.
       </p>
@@ -104,7 +104,7 @@ export default function StudioPage() {
         <label className="text-xs text-clay">
           Model for all
           <input
-            className="field mt-1 w-64"
+            className="field mt-1 w-full max-w-xs"
             placeholder="openai/gpt-4o-mini"
             value={sharedModel}
             onChange={(e) => setSharedModel(e.target.value)}

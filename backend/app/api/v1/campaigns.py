@@ -13,15 +13,15 @@ from app.models.user import User
 from app.schemas.common import CampaignIn, CampaignOut, CampaignUpdate
 from app.schemas.crm import SwarmQueued
 from app.services.access import get_brand_for_user, get_campaign_in_brand
-from app.services.budget import spent_for_campaign
+from app.services.budget import spent_for_campaign, spent_map_for_campaigns
 from app.workers.heartbeat import run_agent_heartbeat
 
 router = APIRouter(prefix="/brands/{brand_id}/campaigns", tags=["campaigns"])
 
 
-def _out(db: Session, campaign: Campaign) -> CampaignOut:
+def _out(db: Session, campaign: Campaign, spent=None) -> CampaignOut:
     data = CampaignOut.model_validate(campaign)
-    data.spent_usd = spent_for_campaign(db, campaign.id)
+    data.spent_usd = spent if spent is not None else spent_for_campaign(db, campaign.id)
     return data
 
 
@@ -30,10 +30,13 @@ def list_campaigns(
     brand_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> list[CampaignOut]:
     get_brand_for_user(db, brand_id, user.id)
-    rows = db.scalars(
-        select(Campaign).where(Campaign.brand_id == brand_id).order_by(Campaign.created_at.desc())
-    ).all()
-    return [_out(db, c) for c in rows]
+    rows = list(
+        db.scalars(
+            select(Campaign).where(Campaign.brand_id == brand_id).order_by(Campaign.created_at.desc())
+        ).all()
+    )
+    spent = spent_map_for_campaigns(db, [c.id for c in rows])
+    return [_out(db, c, spent.get(c.id)) for c in rows]
 
 
 @router.post("", response_model=CampaignOut)

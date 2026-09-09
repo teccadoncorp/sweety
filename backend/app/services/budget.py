@@ -45,6 +45,51 @@ def spent_for_campaign(db: Session, campaign_id: UUID) -> Decimal:
     return Decimal(value or 0)
 
 
+def spent_map_for_brands(db: Session, brand_ids: list[UUID]) -> dict[UUID, Decimal]:
+    if not brand_ids:
+        return {}
+    rows = db.execute(
+        select(UsageEvent.brand_id, func.coalesce(func.sum(UsageEvent.cost_usd), 0))
+        .where(UsageEvent.brand_id.in_(brand_ids), UsageEvent.created_at >= month_start())
+        .group_by(UsageEvent.brand_id)
+    ).all()
+    out = {bid: Decimal("0") for bid in brand_ids}
+    for bid, value in rows:
+        if bid is not None:
+            out[bid] = Decimal(value or 0)
+    return out
+
+
+def spent_map_for_agents(db: Session, agent_ids: list[UUID]) -> dict[UUID, Decimal]:
+    if not agent_ids:
+        return {}
+    rows = db.execute(
+        select(UsageEvent.agent_id, func.coalesce(func.sum(UsageEvent.cost_usd), 0))
+        .where(UsageEvent.agent_id.in_(agent_ids), UsageEvent.created_at >= month_start())
+        .group_by(UsageEvent.agent_id)
+    ).all()
+    out = {aid: Decimal("0") for aid in agent_ids}
+    for aid, value in rows:
+        if aid is not None:
+            out[aid] = Decimal(value or 0)
+    return out
+
+
+def spent_map_for_campaigns(db: Session, campaign_ids: list[UUID]) -> dict[UUID, Decimal]:
+    if not campaign_ids:
+        return {}
+    rows = db.execute(
+        select(UsageEvent.campaign_id, func.coalesce(func.sum(UsageEvent.cost_usd), 0))
+        .where(UsageEvent.campaign_id.in_(campaign_ids), UsageEvent.created_at >= month_start())
+        .group_by(UsageEvent.campaign_id)
+    ).all()
+    out = {cid: Decimal("0") for cid in campaign_ids}
+    for cid, value in rows:
+        if cid is not None:
+            out[cid] = Decimal(value or 0)
+    return out
+
+
 def budget_block_reason(db: Session, brand: Brand, agent: Agent) -> str | None:
     brand_spent = spent_for_brand(db, brand.id)
     if brand_spent >= Decimal(brand.monthly_budget_usd):

@@ -1,5 +1,12 @@
-const configured = process.env.NEXT_PUBLIC_API_URL;
-const API = configured === undefined ? "http://localhost:8000" : configured;
+function apiBase(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      return "";
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+}
 
 export const TOKEN_KEY = "sweety_token";
 
@@ -23,7 +30,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
-  const res = await fetch(`${API}/api/v1${path}`, { ...options, headers });
+  const res = await fetch(`${apiBase()}/api/v1${path}`, {
+    ...options,
+    headers,
+    signal: options.signal ?? (typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(25_000) : undefined),
+  });
   if (res.status === 401 && typeof window !== "undefined") {
     clearToken();
     if (!path.startsWith("/auth/")) window.location.href = "/login";

@@ -112,18 +112,18 @@ export default function BrandPage() {
         {swarm.data && <span className="self-center text-sm text-moss">{swarm.data.queued} queued</span>}
       </div>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm uppercase tracking-[0.18em] text-clay">Brand</p>
-          <h1 className="mt-1 font-serif text-5xl">{brand?.name || "…"}</h1>
+          <h1 className="mt-1 break-words font-serif text-3xl sm:text-4xl lg:text-5xl">{brand?.name || "…"}</h1>
           <p className="mt-3 max-w-2xl text-ink/70">{brand?.mission}</p>
         </div>
         {brand && (
-          <div className="text-right">
+          <div className="w-full min-w-0 sm:w-auto sm:text-right">
             <Link href={`/brands/${id}/connect`} className="mb-2 block text-sm text-cyan">
               Social connectors
             </Link>
             <div className="text-sm text-ink/50">Monthly burn</div>
-            <div className="font-serif text-3xl">
+            <div className="font-serif text-2xl sm:text-3xl">
               {money(brand.spent_usd)}
               <span className="text-lg text-ink/40"> / {money(brand.monthly_budget_usd)}</span>
             </div>
@@ -135,11 +135,11 @@ export default function BrandPage() {
         <section className="card mt-8 grid gap-4 p-5 md:grid-cols-3">
           <div>
             <div className="text-xs uppercase tracking-wide text-clay">Website</div>
-            <div className="mt-1 text-sm">{brand.website_url || "Optional — not set"}</div>
+            <div className="mt-1 break-all text-sm">{brand.website_url || "Optional — not set"}</div>
           </div>
           <div>
             <div className="text-xs uppercase tracking-wide text-clay">App</div>
-            <div className="mt-1 text-sm">{brand.app_url || "Optional — not set"}</div>
+            <div className="mt-1 break-all text-sm">{brand.app_url || "Optional — not set"}</div>
           </div>
           <div>
             <div className="text-xs uppercase tracking-wide text-clay">Logo</div>
@@ -149,12 +149,12 @@ export default function BrandPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="font-serif text-3xl">Org chart · {agents.length} agents</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <h2 className="font-serif text-2xl sm:text-3xl">Org chart · {agents.length} agents</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {agents.map((agent) => (
-            <div key={agent.id} className="card p-5">
+            <div key={agent.id} className="card min-w-0 p-5">
               <div className="flex items-start justify-between gap-2">
-                <Link href={`/brands/${id}/agents/${agent.id}`} className="font-serif text-2xl">
+                <Link href={`/brands/${id}/agents/${agent.id}`} className="min-w-0 break-words font-serif text-xl sm:text-2xl">
                   {agent.title}
                 </Link>
                 {pill(agent.status)}
@@ -175,13 +175,13 @@ export default function BrandPage() {
       </section>
 
       <section className="mt-12 grid gap-6 md:grid-cols-2">
-        <div>
-          <h2 className="font-serif text-3xl">Campaigns</h2>
+        <div className="min-w-0">
+          <h2 className="font-serif text-2xl sm:text-3xl">Campaigns</h2>
           <div className="mt-4 space-y-3">
             {campaigns.map((c) => (
-              <Link key={c.id} href={`/brands/${id}/campaigns/${c.id}`} className="card block p-5 hover:bg-white/[0.07]">
+              <Link key={c.id} href={`/brands/${id}/campaigns/${c.id}`} className="card block min-w-0 p-5 hover:bg-white/[0.07]">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-serif text-2xl">{c.name}</h3>
+                  <h3 className="min-w-0 break-words font-serif text-xl sm:text-2xl">{c.name}</h3>
                   {pill(c.status)}
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm text-ink/70">{c.goal}</p>
@@ -204,8 +204,8 @@ export default function BrandPage() {
             </div>
           </form>
         </div>
-        <div>
-          <h2 className="font-serif text-3xl">Approvals</h2>
+        <div className="min-w-0">
+          <h2 className="font-serif text-2xl sm:text-3xl">Approvals</h2>
           <div className="mt-4 space-y-3">
             {approvals.length === 0 && <p className="text-sm text-ink/50">Nothing waiting on the board.</p>}
             {approvals.map((a) => (

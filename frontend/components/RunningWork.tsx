@@ -7,8 +7,9 @@ import { api, Run } from "@/lib/api";
 export function RunningWork({ brandId }: { brandId: string }) {
   const { data: runs = [] } = useQuery({
     queryKey: ["runs", brandId, "live"],
-    queryFn: () => api<Run[]>(`/brands/${brandId}/runs`),
-    refetchInterval: 4000,
+    queryFn: () => api<Run[]>(`/brands/${brandId}/runs?status=running`),
+    refetchInterval: 8000,
+    refetchIntervalInBackground: false,
   });
   const live = runs.filter((r) => r.status === "running");
   if (!live.length) return null;

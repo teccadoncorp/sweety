@@ -52,7 +52,7 @@ export default function ConnectPage() {
   return (
     <Shell brandId={id}>
       <p className="text-sm uppercase tracking-[0.18em] text-cyan">Connections</p>
-      <h1 className="mt-1 font-serif text-5xl">Social & brand profile</h1>
+      <h1 className="mt-1 font-serif text-3xl sm:text-4xl lg:text-5xl">Social & brand profile</h1>
       <p className="mt-3 max-w-2xl text-clay">
         This is the connector desk. Login with Reddit, X, LinkedIn, Facebook, or Instagram when the
         developer app is in <code>.env</code>. Otherwise paste a token. HeyGen and MCP live here too.

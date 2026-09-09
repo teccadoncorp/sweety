@@ -7,8 +7,22 @@
   background: #070b14;
 }
 
+html,
 body {
-  min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-wrap: anywhere;
+}
+
+body {
   background:
     radial-gradient(1000px 480px at 8% -10%, rgba(139, 109, 255, 0.18), transparent 55%),
     radial-gradient(900px 420px at 100% 0%, rgba(76, 201, 240, 0.12), transparent 50%),
@@ -67,7 +81,7 @@ body {
 }
 
 .crm-kanban {
-  min-width: 180px;
+  min-width: 160px;
 }
 
 .scanline {

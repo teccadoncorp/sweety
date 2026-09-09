@@ -2,15 +2,33 @@
 
 A Docker-first marketing control plane for AI agents. You sit as the board. Agents work campaigns through heartbeats, tasks, artifacts, approvals, search, image/video, and social connectors.
 
+**How to use the product:** [USAGE.md](USAGE.md) — sign in, brands, God Mode, org, studio, command, CRM, connectors, and approvals.
+
 OpenRouter is the live runtime (chat, web search plugin, image models). Claude, Codex, LangChain, and LangGraph are adapter stubs.
 
 ## Run
+
+Default compose serves a production Next.js build (fast). Bind-mount `npm run dev` is only for local UI work.
 
 ```bash
 cp .env.example .env
 # set OPENROUTER_API_KEY
 docker compose up --build
 ```
+
+Hot-reload frontend locally:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+On Amazon Linux with an older Docker Buildx:
+
+```bash
+COMPOSE_BAKE=false docker compose up -d --build
+```
+
+Behind host Nginx, leave `NEXT_PUBLIC_API_URL` empty or keep it as localhost — the browser uses same-origin `/api` when the hostname is not localhost. Rebuild `web` after frontend changes.
 
 - App: http://localhost:3000
 - API: http://localhost:8000/docs
