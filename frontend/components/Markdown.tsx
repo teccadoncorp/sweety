@@ -2,6 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { publicAsset } from "@/lib/api";
 
 export function Markdown({ children }: { children: string }) {
   return (
@@ -38,7 +39,7 @@ export function Markdown({ children }: { children: string }) {
             src ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={src}
+                src={publicAsset(typeof src === "string" ? src : undefined) || String(src)}
                 alt={alt || ""}
                 className="my-3 max-h-[28rem] w-full rounded-xl border border-white/10 object-contain bg-void"
               />

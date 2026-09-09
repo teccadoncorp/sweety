@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ConnectorsPanel } from "@/components/ConnectorsPanel";
 import { Shell } from "@/components/Shell";
 import { WorkInline } from "@/components/WorkLoader";
-import { api, Brand } from "@/lib/api";
+import { api, Brand, publicAsset } from "@/lib/api";
 
 export default function ConnectPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,10 +35,9 @@ export default function ConnectPage() {
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const token = localStorage.getItem("sweety_token");
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const body = new FormData();
       body.append("file", file);
-      const res = await fetch(`${API}/api/v1/brands/${id}/godmode/logo`, {
+      const res = await fetch(`/api/v1/brands/${id}/godmode/logo`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body,
@@ -63,7 +62,7 @@ export default function ConnectPage() {
         <h2 className="font-serif text-2xl">Optional brand assets</h2>
         {brand?.logo_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={brand.logo_url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+          <img src={publicAsset(brand.logo_url)} alt="" className="h-16 w-16 rounded-xl object-cover" />
         )}
         <input
           className="field"

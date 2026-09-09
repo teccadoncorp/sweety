@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     sweety_image_model: str = "google/gemini-2.5-flash-image"
     sweety_search_model: str = "openai/gpt-4o-mini"
     sweety_public_url: str = "http://localhost:3000"
-    sweety_api_public_url: str = "http://localhost:8000"
+    sweety_api_public_url: str = "http://localhost:3000"
     cors_origins: str = ""
     seed_demo: bool = True
     seed_email: str = "board@sweety.local"
@@ -56,6 +56,7 @@ def cors_origin_list() -> list[str]:
         s.sweety_public_url.rstrip("/"),
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://34.255.116.239",
     ]
     origins.extend(part.strip().rstrip("/") for part in s.cors_origins.split(",") if part.strip())
     return list(dict.fromkeys(origins))

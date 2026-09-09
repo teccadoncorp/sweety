@@ -28,10 +28,11 @@ On Amazon Linux with an older Docker Buildx:
 COMPOSE_BAKE=false docker compose up -d --build
 ```
 
-Behind host Nginx, leave `NEXT_PUBLIC_API_URL` empty or keep it as localhost — the browser uses same-origin `/api` when the hostname is not localhost. Rebuild `web` after frontend changes.
+The browser only talks to the frontend. Next.js proxies `/api`, `/media`, `/docs`, and `/health` to the backend (`API_INTERNAL_URL`, `http://api:8000` in Docker). Rebuild `web` after frontend changes.
 
-- App: http://localhost:3000
-- API: http://localhost:8000/docs
+- Public app: http://34.255.116.239 (login: `/login`)
+- Local app: http://localhost:3000
+- API docs (via frontend): http://34.255.116.239/docs
 - Demo login: `board@sweety.local` / `sweety`
 - CRM: brand nav → **CRM** (signal lattice + pipeline)
 - Swarm radar: **Command**
@@ -53,7 +54,7 @@ Restart compose after changing `.env`.
 
 ## Production
 
-Same-origin app behind Caddy (web + `/api` + `/media` on one port):
+Caddy (or host Nginx) only talks to the frontend. Next.js forwards `/api` and `/media` to the backend. Set `SWEETY_PUBLIC_URL` and `SWEETY_API_PUBLIC_URL` to the public frontend origin:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
@@ -76,7 +77,7 @@ Preferred: create a developer app and set client id/secret in `.env`, then **Log
 
 Redirect URI for every OAuth app:
 
-`http://localhost:8000/api/v1/connectors/callback/{reddit|twitter|linkedin|facebook|instagram}`
+`http://localhost:3000/api/v1/connectors/callback/{reddit|twitter|linkedin|facebook|instagram}`
 
 | Network | Login | Fallback |
 | --- | --- | --- |

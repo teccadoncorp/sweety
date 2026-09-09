@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Markdown } from "@/components/Markdown";
 import { Shell } from "@/components/Shell";
 import { WorkInline } from "@/components/WorkLoader";
-import { api, Brand, ChatMessage } from "@/lib/api";
+import { api, Brand, ChatMessage, publicAsset } from "@/lib/api";
 
 const STARTERS = [
   "Launch a 2-week Spring Edit campaign across email and Instagram.",
@@ -28,7 +28,7 @@ const PLATFORMS = [
 function imagesOf(m: ChatMessage) {
   const fromField = m.images || [];
   const fromMd = [...m.content.matchAll(/!\[[^\]]*]\((https?:[^)]+)\)/g)].map((x) => x[1]);
-  return [...new Set([...fromField, ...fromMd])];
+  return [...new Set([...fromField, ...fromMd].map((src) => publicAsset(src) || src))];
 }
 
 export default function GodModePage() {

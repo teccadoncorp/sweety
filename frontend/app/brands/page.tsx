@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { Shell, money } from "@/components/Shell";
 import { WorkInline, WorkLoader } from "@/components/WorkLoader";
-import { api, Brand } from "@/lib/api";
+import { api, Brand, publicAsset } from "@/lib/api";
 
 export default function BrandsPage() {
   const qc = useQueryClient();
@@ -58,7 +58,7 @@ export default function BrandsPage() {
             <div className="flex items-start gap-4">
               {brand.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={brand.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                <img src={publicAsset(brand.logo_url)} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
               ) : (
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet/20 font-serif text-xl">
                   {brand.name.slice(0, 1)}

@@ -1,11 +1,16 @@
 function apiBase(): string {
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host !== "localhost" && host !== "127.0.0.1") {
-      return "";
-    }
+  return "";
+}
+
+export function publicAsset(url?: string | null): string {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+    if (parsed.pathname.startsWith("/media/")) return parsed.pathname + parsed.search;
+  } catch {
+    return url;
   }
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return url;
 }
 
 export const TOKEN_KEY = "sweety_token";
