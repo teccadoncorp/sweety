@@ -61,7 +61,6 @@ from app.services.pm import (
     decorate_workspace,
     display_of,
     get_project_for_user,
-    join_default_workspace,
     membership,
     project_report,
     require_god,
@@ -79,21 +78,11 @@ def _apply(row, payload: dict) -> None:
 
 
 @router.post("/auth/register", response_model=TokenOut)
-def register(payload: PmRegisterIn, db: Session = Depends(get_db)) -> TokenOut:
-    email = payload.email.lower().strip()
-    if db.scalar(select(PmUser).where(PmUser.email == email)):
-        raise HTTPException(status_code=409, detail="Email already registered")
-    user = PmUser(
-        email=email,
-        hashed_password=hash_password(payload.password),
-        display_name=(payload.display_name or email.split("@")[0]).strip(),
+def register(_payload: PmRegisterIn) -> TokenOut:
+    raise HTTPException(
+        status_code=403,
+        detail="Account creation is blocked for security reasons. Contact an admin.",
     )
-    db.add(user)
-    db.flush()
-    join_default_workspace(db, user, "member")
-    db.commit()
-    db.refresh(user)
-    return TokenOut(access_token=create_access_token(user.id, audience="pm"))
 
 
 @router.post("/auth/login", response_model=TokenOut)

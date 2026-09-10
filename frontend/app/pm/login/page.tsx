@@ -17,22 +17,21 @@ export default function PmLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (mode === "register") return;
     setError("");
     setBusy(true);
     try {
-      const data = await pmApi<{ access_token: string }>(`/auth/${mode}`, {
+      const data = await pmApi<{ access_token: string }>(`/auth/login`, {
         method: "POST",
         body: JSON.stringify({
           email,
           password,
-          ...(mode === "register" ? { display_name: displayName } : {}),
         }),
       });
       setPmToken(data.access_token);
@@ -94,63 +93,58 @@ export default function PmLoginPage() {
                   Create account
                 </button>
               </div>
-              <h2>{mode === "login" ? "Open the console" : "Join the board"}</h2>
-              <p className="login-card-lede">
-                {mode === "login"
-                  ? "Task console accounts are separate from marketing God Mode."
-                  : "New accounts join the default workspace as members."}
-              </p>
-              <label>
-                Email
-                <input
-                  className="field"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@team.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </label>
-              {mode === "register" && (
-                <label>
-                  Display name
-                  <input
-                    className="field"
-                    placeholder="Alex"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                </label>
+              {mode === "register" ? (
+                <div className="login-blocked">
+                  <h2>Create account</h2>
+                  <p>
+                    Account creation is blocked for security reasons. Contact an admin to be added to the console.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <h2>Open the console</h2>
+                  <p className="login-card-lede">Task console accounts are separate from marketing God Mode.</p>
+                  <label>
+                    Email
+                    <input
+                      className="field"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@team.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <input
+                      className="field"
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </label>
+                  {error && <p className="login-error">{error}</p>}
+                  {busy && <WorkInline label="Opening the console" />}
+                  <button className="btn-primary login-submit" type="submit" disabled={busy}>
+                    Enter console
+                  </button>
+                  <button
+                    type="button"
+                    className="login-demo"
+                    onClick={() => {
+                      setEmail("contact@cpdash.ai");
+                      setPassword("supersecret123");
+                    }}
+                  >
+                    Fill demo credentials
+                  </button>
+                </>
               )}
-              <label>
-                Password
-                <input
-                  className="field"
-                  type="password"
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </label>
-              {error && <p className="login-error">{error}</p>}
-              {busy && <WorkInline label={mode === "login" ? "Opening the console" : "Creating your account"} />}
-              <button className="btn-primary login-submit" type="submit" disabled={busy}>
-                {mode === "login" ? "Enter console" : "Create account"}
-              </button>
-              <button
-                type="button"
-                className="login-demo"
-                onClick={() => {
-                  setEmail("contact@cpdash.ai");
-                  setPassword("supersecret123");
-                  setMode("login");
-                }}
-              >
-                Fill demo credentials
-              </button>
               <Link href="/login" className="login-demo" style={{ display: "block", textAlign: "center" }}>
                 Marketing God Mode login
               </Link>

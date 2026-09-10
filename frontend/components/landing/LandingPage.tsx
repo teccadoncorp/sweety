@@ -122,11 +122,7 @@ export function LandingPage() {
 
   return (
     <div className="landing-shell">
-      <div className="lp-bg" aria-hidden>
-        <div className="lp-glow lp-glow-a" />
-        <div className="lp-glow lp-glow-b" />
-        <div className="lp-grid" />
-      </div>
+      <div className="lp-bg" aria-hidden />
 
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
         <Link href="/" className="login-brand">
@@ -171,7 +167,7 @@ export function LandingPage() {
 
       <section className="lp-hero">
         <Reveal>
-          <p className="login-kicker">Marketing control plane · Task console</p>
+          <p className="lp-kicker">Marketing control plane</p>
           <h1 className="lp-title">
             Brief the CMO.
             <br />
@@ -239,12 +235,12 @@ export function LandingPage() {
 
       <section id="product" className="lp-section">
         <Reveal>
-          <p className="login-kicker">Two consoles. One database.</p>
+          <p className="lp-kicker">Two consoles. One database.</p>
           <h2 className="lp-h2">The board briefs. The org runs. Product ships.</h2>
         </Reveal>
         <div className="lp-split">
           <Reveal className="lp-panel">
-            <p className="lp-panel-kicker">01 · Marketing</p>
+            <p className="lp-panel-kicker">Marketing</p>
             <h3>God Mode</h3>
             <p>
               Chat with the CMO. Campaigns, drafts, images, and CRM moves happen in tools — then wait on Approvals.
@@ -262,7 +258,7 @@ export function LandingPage() {
           <Reveal delay={100} className="lp-panel-visual">
             <Image
               src="/landing/product-godmode.png"
-              alt="God Mode briefing on a laptop in a dark studio"
+              alt="God Mode briefing"
               width={1280}
               height={720}
             />
@@ -270,7 +266,7 @@ export function LandingPage() {
         </div>
         <div className="lp-split lp-split-rev">
           <Reveal className="lp-panel">
-            <p className="lp-panel-kicker">02 · Product</p>
+            <p className="lp-panel-kicker">Product</p>
             <h3>Task console</h3>
             <p>
               A Jira-style board in its own login and schema. God Mode writes features. The team owns issues,
@@ -309,7 +305,7 @@ export function LandingPage() {
 
       <section id="cases" className="lp-section">
         <Reveal>
-          <p className="login-kicker">Case studies</p>
+          <p className="lp-kicker">Case studies</p>
           <h2 className="lp-h2">Rooms that briefed once, then watched the work land.</h2>
         </Reveal>
         <div className="lp-cases">
@@ -342,7 +338,7 @@ export function LandingPage() {
 
       <section id="work" className="lp-section">
         <Reveal>
-          <p className="login-kicker">How it works</p>
+          <p className="lp-kicker">How it works</p>
           <h2 className="lp-h2">Four moves. Humans stay on the gate.</h2>
         </Reveal>
         <ol className="lp-steps">
