@@ -133,16 +133,6 @@ export default function PmLoginPage() {
                   <button className="btn-primary login-submit" type="submit" disabled={busy}>
                     Enter console
                   </button>
-                  <button
-                    type="button"
-                    className="login-demo"
-                    onClick={() => {
-                      setEmail("contact@cpdash.ai");
-                      setPassword("supersecret123");
-                    }}
-                  >
-                    Fill demo credentials
-                  </button>
                 </>
               )}
               <Link href="/login" className="login-demo" style={{ display: "block", textAlign: "center" }}>

@@ -131,16 +131,6 @@ export default function LoginPage() {
                   <button className="btn-primary login-submit" type="submit" disabled={busy}>
                     Enter God Mode
                   </button>
-                  <button
-                    type="button"
-                    className="login-demo"
-                    onClick={() => {
-                      setEmail("board@sweety.local");
-                      setPassword("sweety");
-                    }}
-                  >
-                    Fill demo credentials
-                  </button>
                 </>
               )}
               <Link href="/pm/login" className="login-demo" style={{ display: "block", textAlign: "center" }}>
