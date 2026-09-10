@@ -5,6 +5,7 @@ services:
     command: npm run dev
     environment:
       API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_APP_NAME: ${APP_NAME:-Sweety}
       NODE_ENV: development
     ports:
       - "3000:3000"

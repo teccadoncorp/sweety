@@ -5,18 +5,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        void: "#070b14",
-        paper: "#0c1220",
-        ink: "#e8eefc",
-        rose: "#8b6dff",
-        violet: "#8b6dff",
-        cyan: "#4cc9f0",
-        clay: "#94a3b8",
-        moss: "#34d399",
+        void: "#ffffff",
+        paper: "#f4f7fb",
+        ink: "#0f172a",
+        line: "#d7e3f4",
+        rose: "#1d4ed8",
+        violet: "#1d4ed8",
+        cyan: "#1d4ed8",
+        clay: "#64748b",
+        moss: "#047857",
       },
       fontFamily: {
         serif: ["var(--font-serif)", "Georgia", "serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04)",
       },
     },
   },

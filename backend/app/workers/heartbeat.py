@@ -23,6 +23,9 @@ def scan_due_heartbeats() -> int:
         agents = due_agents(db)
         for agent in agents:
             run_agent_heartbeat.delay(str(agent.id), "schedule")
+        from app.services.loop import publish_due_content
+
+        publish_due_content(db)
         return len(agents)
     finally:
         db.close()

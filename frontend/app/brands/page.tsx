@@ -15,6 +15,9 @@ export default function BrandsPage() {
   });
   const [name, setName] = useState("");
   const [mission, setMission] = useState("");
+  const [voice, setVoice] = useState("");
+  const [audience, setAudience] = useState("");
+  const [guidelines, setGuidelines] = useState("");
   const [website, setWebsite] = useState("");
   const [appUrl, setAppUrl] = useState("");
   const [logo, setLogo] = useState("");
@@ -26,6 +29,9 @@ export default function BrandsPage() {
         body: JSON.stringify({
           name,
           mission,
+          voice_notes: voice,
+          audience,
+          guidelines,
           website_url: website,
           app_url: appUrl,
           logo_url: logo,
@@ -35,6 +41,9 @@ export default function BrandsPage() {
     onSuccess: () => {
       setName("");
       setMission("");
+      setVoice("");
+      setAudience("");
+      setGuidelines("");
       setWebsite("");
       setAppUrl("");
       setLogo("");
@@ -54,7 +63,7 @@ export default function BrandsPage() {
       {isLoading && <div className="mt-8"><WorkInline label="Loading brands" /></div>}
       <div className="mt-10 grid gap-6 md:grid-cols-2">
         {brands.map((brand) => (
-          <Link key={brand.id} href={`/brands/${brand.id}/godmode`} className="card block min-w-0 p-6 hover:bg-white/[0.07]">
+          <Link key={brand.id} href={`/brands/${brand.id}/godmode`} className="card block min-w-0 p-6 hover:bg-paper">
             <div className="flex items-start gap-4">
               {brand.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -82,9 +91,27 @@ export default function BrandsPage() {
           <input className="field" placeholder="Brand name" value={name} onChange={(e) => setName(e.target.value)} />
           <textarea
             className="field min-h-20"
-            placeholder="Mission"
+            placeholder="Mission — the CMO will open the first campaign from this"
             value={mission}
             onChange={(e) => setMission(e.target.value)}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Voice / tone"
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Audience"
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Do's / don'ts"
+            value={guidelines}
+            onChange={(e) => setGuidelines(e.target.value)}
           />
           <input className="field" placeholder="Website (optional)" value={website} onChange={(e) => setWebsite(e.target.value)} />
           <input className="field" placeholder="App URL (optional)" value={appUrl} onChange={(e) => setAppUrl(e.target.value)} />

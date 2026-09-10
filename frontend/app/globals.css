@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #e8eefc;
-  background: #070b14;
+  color: #0f172a;
+  background: #f4f7fb;
 }
 
 html,
@@ -16,21 +16,15 @@ body {
 
 body {
   overflow-wrap: anywhere;
-}
-
-body {
-  background:
-    radial-gradient(1000px 480px at 8% -10%, rgba(139, 109, 255, 0.18), transparent 55%),
-    radial-gradient(900px 420px at 100% 0%, rgba(76, 201, 240, 0.12), transparent 50%),
-    #070b14;
+  background: #f4f7fb;
 }
 
 .card {
-  @apply rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_-32px_rgba(0,0,0,0.8)] backdrop-blur;
+  @apply rounded-xl border border-line bg-white shadow-card;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition;
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition;
 }
 
 .btn-primary {
@@ -38,11 +32,11 @@ body {
 }
 
 .btn-ghost {
-  @apply btn border border-white/15 bg-white/5 hover:bg-white/10;
+  @apply btn border border-line bg-white text-ink hover:bg-paper;
 }
 
 .field {
-  @apply w-full rounded-xl border border-white/15 bg-void/60 px-3 py-2 text-sm text-ink outline-none placeholder:text-clay/70 focus:border-cyan/60;
+  @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none placeholder:text-clay/70 focus:border-violet focus:ring-2 focus:ring-violet/15;
 }
 
 @keyframes progress-slide {
@@ -61,19 +55,17 @@ body {
 
 .chat-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(139, 109, 255, 0.4) transparent;
+  scrollbar-color: #93c5fd transparent;
 }
 
 .hud-glow {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 40px rgba(76, 201, 240, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(29, 78, 216, 0.06);
 }
 
 .signal-bar {
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #4cc9f0, #8b6dff, #34d399);
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6, #047857);
 }
 
 .crm-kanban {
@@ -81,10 +73,5 @@ body {
 }
 
 .scanline {
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 3px,
-    rgba(76, 201, 240, 0.03) 4px
-  );
+  background: transparent;
 }

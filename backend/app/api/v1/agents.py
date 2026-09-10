@@ -13,6 +13,7 @@ from app.schemas.crm import SwarmQueued
 from app.schemas.ops import ModelBroadcastIn, OrgPresetOut
 from app.services.access import get_agent_in_brand, get_brand_for_user
 from app.services.budget import spent_for_agent, spent_map_for_agents
+from app.services.loop import ensure_launch_campaign
 from app.services.seed import DEFAULT_ORG, ensure_default_org
 from app.workers.heartbeat import run_agent_heartbeat
 
@@ -45,6 +46,7 @@ def expand_org(
 ) -> list[AgentOut]:
     brand = get_brand_for_user(db, brand_id, user.id)
     agents = ensure_default_org(db, brand)
+    ensure_launch_campaign(db, brand)
     db.commit()
     return _many(db, agents)
 
@@ -53,7 +55,11 @@ def expand_org(
 def wake_all_agents(
     brand_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> SwarmQueued:
-    get_brand_for_user(db, brand_id, user.id)
+    brand = get_brand_for_user(db, brand_id, user.id)
+    if brand.agents_paused:
+        return SwarmQueued(queued=0, agent_ids=[], reason="Kill switch is on")
+    ensure_launch_campaign(db, brand)
+    db.commit()
     rows = db.scalars(select(Agent).where(Agent.brand_id == brand_id, Agent.status == "active")).all()
     for agent in rows:
         run_agent_heartbeat.delay(str(agent.id), "swarm")
@@ -203,7 +209,9 @@ def queue_heartbeat(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> HeartbeatQueued:
-    get_brand_for_user(db, brand_id, user.id)
+    brand = get_brand_for_user(db, brand_id, user.id)
     agent = get_agent_in_brand(db, brand_id, agent_id)
+    if brand.agents_paused:
+        return HeartbeatQueued(queued=False, reason="Kill switch is on")
     run_agent_heartbeat.delay(str(agent.id), "manual")
     return HeartbeatQueued(queued=True, reason="Heartbeat queued")

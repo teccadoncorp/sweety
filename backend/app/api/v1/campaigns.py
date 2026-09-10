@@ -14,6 +14,7 @@ from app.schemas.common import CampaignIn, CampaignOut, CampaignUpdate
 from app.schemas.crm import SwarmQueued
 from app.services.access import get_brand_for_user, get_campaign_in_brand
 from app.services.budget import spent_for_campaign, spent_map_for_campaigns
+from app.services.loop import queue_launch_heartbeats, spawn_launch_campaign
 from app.workers.heartbeat import run_agent_heartbeat
 
 router = APIRouter(prefix="/brands/{brand_id}/campaigns", tags=["campaigns"])
@@ -46,24 +47,20 @@ def create_campaign(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> CampaignOut:
-    get_brand_for_user(db, brand_id, user.id)
-    campaign = Campaign(brand_id=brand_id, **payload.model_dump())
-    db.add(campaign)
-    db.flush()
-    cmo = db.scalar(select(Agent).where(Agent.brand_id == brand_id, Agent.role == "cmo"))
-    db.add(
-        Task(
-            brand_id=brand_id,
-            campaign_id=campaign.id,
-            assignee_agent_id=cmo.id if cmo else None,
-            title="Write campaign brief and task tree",
-            description="Use the campaign-brief skill. Produce strategy, channel mix, and delegated tasks. Request board approval.",
-            status="ready",
-            priority=1,
-        )
+    brand = get_brand_for_user(db, brand_id, user.id)
+    campaign, wake_ids = spawn_launch_campaign(
+        db,
+        brand,
+        name=payload.name,
+        goal=payload.goal,
+        budget_cap_usd=payload.budget_cap_usd,
     )
+    if payload.brief:
+        campaign.brief = payload.brief
     db.commit()
     db.refresh(campaign)
+    if wake_ids and not brand.agents_paused:
+        queue_launch_heartbeats(wake_ids, "campaign")
     return _out(db, campaign)
 
 
@@ -132,7 +129,9 @@ def run_campaign_team(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> SwarmQueued:
-    get_brand_for_user(db, brand_id, user.id)
+    brand = get_brand_for_user(db, brand_id, user.id)
+    if brand.agents_paused:
+        return SwarmQueued(queued=0, agent_ids=[], reason="Kill switch is on")
     get_campaign_in_brand(db, brand_id, campaign_id)
     tasks = db.scalars(
         select(Task).where(

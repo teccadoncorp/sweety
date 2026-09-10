@@ -96,6 +96,7 @@ class ContactOut(ORMModel):
     notes: str
     last_touch_at: datetime | None
     created_at: datetime
+    account_name: str = ""
 
 
 class DealIn(BaseModel):
@@ -109,6 +110,8 @@ class DealIn(BaseModel):
     probability: int = Field(default=20, ge=0, le=100)
     close_date: str = ""
     notes: str = ""
+    lost_reason: str = ""
+    sort_order: int = 0
 
 
 class DealUpdate(BaseModel):
@@ -122,6 +125,8 @@ class DealUpdate(BaseModel):
     probability: int | None = Field(default=None, ge=0, le=100)
     close_date: str | None = None
     notes: str | None = None
+    lost_reason: str | None = None
+    sort_order: int | None = None
 
 
 class DealOut(ORMModel):
@@ -137,13 +142,19 @@ class DealOut(ORMModel):
     probability: int
     close_date: str
     notes: str
+    lost_reason: str = ""
+    sort_order: int = 0
+    contact_name: str = ""
+    account_name: str = ""
     created_at: datetime
+    updated_at: datetime | None = None
 
 
 class ActivityIn(BaseModel):
     kind: str = "note"
     title: str = ""
     body: str = ""
+    due_at: datetime | None = None
     contact_id: UUID | None = None
     account_id: UUID | None = None
     deal_id: UUID | None = None
@@ -160,6 +171,7 @@ class ActivityOut(ORMModel):
     kind: str
     title: str
     body: str
+    due_at: datetime | None = None
     created_at: datetime
 
 
@@ -168,8 +180,11 @@ class CrmBoardOut(BaseModel):
     accounts: int
     open_deals: int
     pipeline_usd: Decimal
+    weighted_pipeline_usd: Decimal
     won_usd: Decimal
+    avg_deal_usd: Decimal
     hot_leads: int
+    overdue: int
     stages: dict[str, int]
     avg_signal: float
 

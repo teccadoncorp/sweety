@@ -51,7 +51,7 @@ class OpenRouterAdapter:
             "Authorization": f"Bearer {settings.openrouter_api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": settings.sweety_public_url,
-            "X-Title": "Sweety",
+            "X-Title": settings.app_name,
         }
 
         with httpx.Client(timeout=90.0) as client:

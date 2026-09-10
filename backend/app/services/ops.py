@@ -35,6 +35,10 @@ def command_snapshot(db: Session, brand_id: UUID) -> dict:
         .select_from(CrmContact)
         .where(CrmContact.brand_id == brand_id, CrmContact.temperature.in_(["hot", "star"]))
     ) or 0
+    from app.models.brand import Brand
+
+    brand = db.get(Brand, brand_id)
+    agents_paused = bool(brand.agents_paused) if brand else False
 
     inbox_map: dict[UUID, int] = {}
     last_map: dict[UUID, HeartbeatRun] = {}
@@ -83,5 +87,6 @@ def command_snapshot(db: Session, brand_id: UUID) -> dict:
         "ready_tasks": int(ready_tasks),
         "pending_approvals": int(pending),
         "crm_hot": int(hot),
+        "agents_paused": agents_paused,
         "agents": rows,
     }

@@ -58,7 +58,7 @@ def generate_image(
         headers={
             "Authorization": f"Bearer {settings.openrouter_api_key}",
             "HTTP-Referer": settings.sweety_public_url,
-            "X-Title": "Sweety",
+            "X-Title": settings.app_name,
         },
         json=payload,
         timeout=120,

@@ -68,6 +68,7 @@ def settings_status(user: User = Depends(get_current_user)) -> dict:
     if key:
         masked = f"{key[:6]}…{key[-4:]}" if len(key) > 12 else "set"
     return {
+        "app_name": settings.app_name,
         "openrouter_configured": bool(key),
         "openrouter_key_preview": masked,
         "default_model": settings.openrouter_default_model,

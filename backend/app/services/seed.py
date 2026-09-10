@@ -7,8 +7,6 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models.agent import Agent
 from app.models.brand import Brand
-from app.models.campaign import Campaign
-from app.models.task import Task
 from app.models.user import User
 from app.services.crm import seed_demo_crm
 
@@ -207,33 +205,21 @@ def seed_demo_if_empty(db: Session) -> None:
         name="Sweety Demo",
         mission="Help independent beauty and wellness brands launch campaigns that feel human, not templated.",
         voice_notes="Warm, precise, a little playful. No hype adjectives. Speak like a sharp creative director.",
+        audience="Independent beauty and wellness founders who want campaigns that feel human.",
+        guidelines="No hype adjectives. No invented claims. Ask before publishing anything live.",
         monthly_budget_usd=Decimal("80"),
     )
     db.add(brand)
     db.flush()
     agents = ensure_default_org(db, brand)
-    cmo = next(a for a in agents if a.role == "cmo")
 
-    campaign = Campaign(
-        brand_id=brand.id,
+    from app.services.loop import spawn_launch_campaign
+
+    spawn_launch_campaign(
+        db,
+        brand,
         name="Brand Launch — Spring Edit",
         goal="Launch the Spring Edit collection to email and social in two weeks, with a coherent brief the board can approve.",
-        brief="",
-        status="draft",
         budget_cap_usd=Decimal("20"),
-    )
-    db.add(campaign)
-    db.flush()
-
-    db.add(
-        Task(
-            brand_id=brand.id,
-            campaign_id=campaign.id,
-            assignee_agent_id=cmo.id,
-            title="Write campaign brief and task tree",
-            description="Use the campaign-brief skill. Produce strategy, channel mix, and delegated tasks. Request board approval.",
-            status="ready",
-            priority=1,
-        )
     )
     db.commit()

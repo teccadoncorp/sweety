@@ -1,26 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/lib/providers";
 import "./globals.css";
 
-const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
-const serif = Fraunces({ subsets: ["latin"], variable: "--font-serif" });
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "Sweety";
+
+const sans = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans" });
+const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
-  title: "Sweety — marketing control plane",
+  title: `${appName} — marketing control plane`,
   description: "A board for your marketing agents.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#070b14",
+  themeColor: "#1d4ed8",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable}`}>
-      <body className="font-sans antialiased">
+      <body className="bg-paper font-sans text-ink antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

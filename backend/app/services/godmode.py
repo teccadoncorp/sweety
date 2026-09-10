@@ -29,6 +29,8 @@ GODMODE_EXTRA_TOOLS = [
                     "app_url": {"type": "string"},
                     "mission": {"type": "string"},
                     "voice_notes": {"type": "string"},
+                    "audience": {"type": "string"},
+                    "guidelines": {"type": "string"},
                 },
             },
         },
@@ -64,6 +66,8 @@ class GodModeExecutor(ToolExecutor):
         app_url: str | None = None,
         mission: str | None = None,
         voice_notes: str | None = None,
+        audience: str | None = None,
+        guidelines: str | None = None,
     ) -> dict:
         if logo_url is not None:
             self.brand.logo_url = logo_url
@@ -75,6 +79,10 @@ class GodModeExecutor(ToolExecutor):
             self.brand.mission = mission
         if voice_notes is not None:
             self.brand.voice_notes = voice_notes
+        if audience is not None:
+            self.brand.audience = audience
+        if guidelines is not None:
+            self.brand.guidelines = guidelines
         self.db.add(self.brand)
         self.db.flush()
         return {
@@ -85,6 +93,8 @@ class GodModeExecutor(ToolExecutor):
         }
 
     def wake_agent(self, role: str) -> dict:
+        if getattr(self.brand, "agents_paused", False):
+            return {"ok": False, "error": "Kill switch is on"}
         agent = self._agent_by_role(role)
         if agent is None:
             return {"ok": False, "error": f"No agent with role {role}"}
@@ -92,6 +102,8 @@ class GodModeExecutor(ToolExecutor):
         return {"ok": True, "queued": True, "agent_id": str(agent.id), "role": agent.role}
 
     def wake_all_agents(self) -> dict:
+        if getattr(self.brand, "agents_paused", False):
+            return {"ok": False, "error": "Kill switch is on", "queued": 0}
         rows = self.db.scalars(select(Agent).where(Agent.brand_id == self.brand.id, Agent.status == "active")).all()
         for agent in rows:
             run_agent_heartbeat.delay(str(agent.id), "godmode-swarm")
@@ -121,6 +133,9 @@ def list_messages(db: Session, brand_id: UUID) -> list[GodModeMessage]:
 
 
 def reply(db: Session, brand: Brand, user_text: str) -> GodModeMessage:
+    from app.services.loop import brand_memory_block, ensure_launch_campaign
+
+    ensure_launch_campaign(db, brand)
     cmo = db.scalar(select(Agent).where(Agent.brand_id == brand.id, Agent.role == "cmo"))
     actor = cmo or db.scalar(select(Agent).where(Agent.brand_id == brand.id))
     if actor is None:
@@ -132,21 +147,23 @@ def reply(db: Session, brand: Brand, user_text: str) -> GodModeMessage:
 
     history = list_messages(db, brand.id)
     settings = get_settings()
-    system = f"""You are Sweety God Mode — the CMO sitting with the human board in a ChatGPT-style briefing.
+    system = f"""You are {settings.app_name} God Mode — the CMO sitting with the human board in a ChatGPT-style briefing.
 
 Brand: {brand.name}
 Mission: {brand.mission or "(not set)"}
-Voice: {brand.voice_notes or "(not set)"}
+{brand_memory_block(brand)}
 Logo: {brand.logo_url or "(optional, not set)"}
 Website: {brand.website_url or "(optional, not set)"}
 App: {brand.app_url or "(optional, not set)"}
+Agents paused: {getattr(brand, "agents_paused", False)}
 
 The human will describe what they want in plain language. You:
 1. Ask for logo, website, and app URL if they would help and are still missing — keep it optional, never block.
-2. Turn the brief into a plan: campaign, task tree, who does what.
-3. Use tools to create the campaign and tasks, then wake the right agents — or wake_all_agents to run the swarm in parallel.
+2. A first campaign is already opened from the mission if one was missing. Checkout or inspect it, write the brief, and make sure the copywriter has a first-post task. Use create_campaign only for additional campaigns.
+3. Use tools to create tasks, then wake the right agents — or wake_all_agents to run the swarm in parallel.
 4. You can score CRM leads and move deals with CRM tools.
 5. Reply in clean Markdown (headings, lists, bold). The UI renders it.
+6. Nothing publishes without board approval. After drafts exist, tell the human to open Approvals.
 
 Images:
 - If they want a visual, FIRST ask which platform to post on: Instagram feed, Instagram story/reel, X/Twitter, LinkedIn, Facebook, Reddit, Pinterest, or TikTok.
@@ -166,7 +183,7 @@ Never invent a live social post. Check connectors before promising publish.
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "HTTP-Referer": settings.sweety_public_url,
-        "X-Title": "Sweety God Mode",
+        "X-Title": f"{settings.app_name} God Mode",
     }
     if not settings.openrouter_api_key:
         assistant = GodModeMessage(

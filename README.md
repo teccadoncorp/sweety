@@ -50,7 +50,7 @@ Add or reset a board login (Postgres must be up):
 docker compose --profile tools run --rm create-admin --email you@company.com --password secret
 ```
 
-Restart compose after changing `.env`.
+Restart compose after changing `.env`. Product name in the UI comes from `APP_NAME` (default `Sweety`).
 
 ## Production
 

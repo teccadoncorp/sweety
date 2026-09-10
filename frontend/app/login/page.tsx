@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { WorkInline } from "@/components/WorkLoader";
 import { api, setToken } from "@/lib/api";
+import { useAppName } from "@/lib/branding";
 
 export default function LoginPage() {
   const router = useRouter();
+  const appName = useAppName();
   const [email, setEmail] = useState("board@sweety.local");
   const [password, setPassword] = useState("sweety");
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -32,8 +34,8 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex h-dvh max-w-lg flex-col justify-center overflow-y-auto px-6">
-      <p className="text-sm uppercase tracking-[0.2em] text-cyan">CMO command plane</p>
-      <h1 className="mt-3 font-serif text-4xl leading-none sm:text-6xl">Sweety</h1>
+      <p className="text-sm font-medium uppercase tracking-[0.16em] text-violet">Marketing control plane</p>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">{appName}</h1>
       <p className="mt-4 max-w-md text-clay">
         Brief the CMO in God Mode. Connect socials. Watch the org run the plan.
       </p>

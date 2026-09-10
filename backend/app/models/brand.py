@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,9 @@ class Brand(Base):
     name: Mapped[str] = mapped_column(String(200))
     mission: Mapped[str] = mapped_column(Text, default="")
     voice_notes: Mapped[str] = mapped_column(Text, default="")
+    audience: Mapped[str] = mapped_column(Text, default="")
+    guidelines: Mapped[str] = mapped_column(Text, default="")
+    agents_paused: Mapped[bool] = mapped_column(Boolean, default=False)
     logo_url: Mapped[str] = mapped_column(Text, default="")
     website_url: Mapped[str] = mapped_column(String(500), default="")
     app_url: Mapped[str] = mapped_column(String(500), default="")

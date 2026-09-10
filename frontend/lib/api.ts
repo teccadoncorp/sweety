@@ -57,6 +57,9 @@ export type Brand = {
   name: string;
   mission: string;
   voice_notes: string;
+  audience?: string;
+  guidelines?: string;
+  agents_paused?: boolean;
   logo_url?: string;
   website_url?: string;
   app_url?: string;
@@ -146,7 +149,48 @@ export type Approval = {
   status: string;
   subject_type: string;
   subject_id: string | null;
-  payload: { summary?: string };
+  payload: {
+    summary?: string;
+    text?: string;
+    title?: string;
+    platform?: string;
+    channel?: string;
+    kind?: string;
+    content_item_id?: string;
+    publish_result?: { ok?: boolean; error?: string };
+    scheduled_for?: string;
+  };
+  created_at: string;
+  decided_at?: string | null;
+};
+
+export type ContentItem = {
+  id: string;
+  campaign_id: string | null;
+  task_id: string | null;
+  kind: string;
+  channel: string;
+  title: string;
+  body: string;
+  status: string;
+  scheduled_for: string | null;
+  published_at: string | null;
+  extra: Record<string, unknown>;
+  created_at: string;
+};
+
+export type CalendarSnapshot = {
+  items: ContentItem[];
+  counts: Record<string, number>;
+};
+
+export type BrandNotification = {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  href: string;
+  read_at: string | null;
   created_at: string;
 };
 
@@ -164,8 +208,11 @@ export type CrmBoard = {
   accounts: number;
   open_deals: number;
   pipeline_usd: string;
+  weighted_pipeline_usd: string;
   won_usd: string;
+  avg_deal_usd: string;
   hot_leads: number;
+  overdue: number;
   stages: Record<string, number>;
   avg_signal: number;
 };
@@ -200,18 +247,24 @@ export type CrmContact = {
   notes: string;
   last_touch_at: string | null;
   created_at: string;
+  account_name?: string;
 };
 
 export type CrmDeal = {
   id: string;
   account_id: string | null;
   contact_id: string | null;
+  owner_agent_id?: string | null;
   name: string;
   stage: string;
   value_usd: string;
   probability: number;
   close_date: string;
   notes: string;
+  lost_reason?: string;
+  sort_order?: number;
+  contact_name?: string;
+  account_name?: string;
   created_at: string;
 };
 
@@ -222,6 +275,7 @@ export type CrmActivity = {
   kind: string;
   title: string;
   body: string;
+  due_at?: string | null;
   created_at: string;
 };
 
@@ -247,5 +301,6 @@ export type CommandSnapshot = {
   ready_tasks: number;
   pending_approvals: number;
   crm_hot: number;
+  agents_paused?: boolean;
   agents: CommandAgent[];
 };

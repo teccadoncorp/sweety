@@ -24,6 +24,7 @@ from app.models.connector import Connector
 from app.models.crm import CrmAccount, CrmActivity, CrmContact, CrmDeal, DEAL_STAGES
 from app.models.media_asset import MediaAsset
 from app.models.task import Task
+from app.services.loop import BRIEF_KINDS, CONTENT_KINDS, KIND_CHANNEL, notify, queue_draft_for_approval
 from app.services.publish import execute_social_payload
 from app.services.sanitize import sanitize_json, strip_nuls
 
@@ -45,6 +46,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
                 "type": "object",
                 "properties": {"campaign_id": {"type": "string"}},
                 "required": ["campaign_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_campaign",
+            "description": "Open a campaign from the brand mission or a stated goal, with CMO and content tasks attached.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "goal": {"type": "string"},
+                },
+                "required": ["name", "goal"],
             },
         },
     },
@@ -354,7 +370,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "crm_log_activity",
-            "description": "Log a CRM touch: note, call, email, meeting, ai, touch.",
+            "description": "Log a CRM touch: note, call, email, meeting, ai, touch, stage.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -366,6 +382,26 @@ TOOL_SPECS: list[dict[str, Any]] = [
                 },
                 "required": ["title", "body"],
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "crm_score_contact",
+            "description": "Score a CRM contact (email) with AI/heuristic and update temperature + next action.",
+            "parameters": {
+                "type": "object",
+                "properties": {"email": {"type": "string"}},
+                "required": ["email"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "crm_overdue",
+            "description": "List contacts with a next action that have not been touched in 7 days.",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
 ]
@@ -407,6 +443,9 @@ class ToolExecutor:
                 "name": self.brand.name,
                 "mission": self.brand.mission,
                 "voice_notes": self.brand.voice_notes,
+                "audience": getattr(self.brand, "audience", "") or "",
+                "guidelines": getattr(self.brand, "guidelines", "") or "",
+                "agents_paused": bool(getattr(self.brand, "agents_paused", False)),
                 "logo_url": self.brand.logo_url,
                 "website_url": self.brand.website_url,
                 "app_url": self.brand.app_url,
@@ -429,6 +468,18 @@ class ToolExecutor:
                 "brief": campaign.brief,
                 "status": campaign.status,
             },
+        }
+
+    def create_campaign(self, name: str, goal: str) -> dict[str, Any]:
+        from app.services.loop import spawn_launch_campaign
+
+        campaign, _ = spawn_launch_campaign(self.db, self.brand, name=name, goal=goal)
+        return {
+            "ok": True,
+            "campaign_id": str(campaign.id),
+            "name": campaign.name,
+            "status": campaign.status,
+            "detail": "Campaign opened with CMO brief and first-post tasks.",
         }
 
     def list_inbox(self) -> dict[str, Any]:
@@ -555,15 +606,66 @@ class ToolExecutor:
             content=strip_nuls(content, 100_000),
         )
         self.db.add(artifact)
-        if kind in ("brief", "campaign-brief") and content:
+        if kind in BRIEF_KINDS and content:
             campaign = self.db.get(Campaign, task.campaign_id)
             if campaign and not campaign.brief:
                 campaign.brief = content
                 if campaign.status == "draft":
                     campaign.status = "awaiting_approval"
                 self.db.add(campaign)
+            from app.services.loop import ensure_content_followup
+
+            if campaign:
+                ensure_content_followup(self.db, self.brand, campaign)
+            already = self.db.scalar(
+                select(Approval).where(
+                    Approval.brand_id == self.brand.id,
+                    Approval.status == "pending",
+                    Approval.subject_type == "campaign",
+                    Approval.subject_id == task.campaign_id,
+                )
+            )
+            if already is None and task.campaign_id:
+                approval = Approval(
+                    brand_id=self.brand.id,
+                    kind="campaign",
+                    status="pending",
+                    subject_type="campaign",
+                    subject_id=task.campaign_id,
+                    requested_by_agent_id=self.agent.id,
+                    payload={"summary": f"Campaign brief ready: {title}", "title": title},
+                )
+                self.db.add(approval)
+                self.db.flush()
+                notify(
+                    self.db,
+                    self.brand.id,
+                    kind="approval",
+                    title=f"Campaign brief needs approval: {title}",
+                    body=(content or "")[:400],
+                    href=f"/brands/{self.brand.id}/approvals",
+                    subject_type="approval",
+                    subject_id=approval.id,
+                )
         self.db.flush()
-        return {"ok": True, "artifact_id": str(artifact.id)}
+        result = {"ok": True, "artifact_id": str(artifact.id)}
+        if kind in CONTENT_KINDS and content:
+            item, approval = queue_draft_for_approval(
+                self.db,
+                self.brand,
+                self.agent,
+                title=title,
+                text=content,
+                kind=kind,
+                channel=KIND_CHANNEL.get(kind, "linkedin"),
+                task_id=task.id,
+                campaign_id=task.campaign_id,
+                artifact_id=artifact.id,
+            )
+            result["content_item_id"] = str(item.id)
+            result["approval_id"] = str(approval.id)
+            result["needs_approval"] = True
+        return result
 
     def request_approval(
         self,
@@ -588,6 +690,16 @@ class ToolExecutor:
                 campaign.status = "awaiting_approval"
                 self.db.add(campaign)
         self.db.flush()
+        notify(
+            self.db,
+            self.brand.id,
+            kind="approval",
+            title=f"Needs approval: {kind}",
+            body=summary,
+            href=f"/brands/{self.brand.id}/approvals",
+            subject_type="approval",
+            subject_id=approval.id,
+        )
         return {"ok": True, "approval_id": str(approval.id)}
 
     def list_connectors(self) -> dict[str, Any]:
@@ -687,22 +799,32 @@ class ToolExecutor:
             if approval_id:
                 approved = self.db.get(Approval, UUID(approval_id))
             if approved is None or approved.brand_id != self.brand.id or approved.status != "approved":
-                approval = Approval(
-                    brand_id=self.brand.id,
-                    kind="publish",
-                    status="pending",
-                    subject_type="task" if task_id else "brand",
-                    subject_id=UUID(task_id) if task_id else None,
-                    requested_by_agent_id=self.agent.id,
-                    payload=payload,
+                campaign_id = None
+                task_uuid = UUID(task_id) if task_id else None
+                if task_uuid:
+                    task = self._task(task_id)
+                    campaign_id = task.campaign_id
+                item, approval = queue_draft_for_approval(
+                    self.db,
+                    self.brand,
+                    self.agent,
+                    title=title or f"{platform} post",
+                    text=text,
+                    kind="social-copy",
+                    channel=platform,
+                    task_id=task_uuid,
+                    campaign_id=campaign_id,
+                    extra={
+                        "image_url": image_url,
+                        "subreddit": subreddit,
+                    },
                 )
-                self.db.add(approval)
-                self.db.flush()
                 return {
                     "ok": True,
                     "queued": True,
                     "needs_approval": True,
                     "approval_id": str(approval.id),
+                    "content_item_id": str(item.id),
                     "detail": "Board must approve before this goes live.",
                 }
         result = execute_social_payload(self.db, self.brand.id, payload)
@@ -892,3 +1014,36 @@ class ToolExecutor:
             contact.last_touch_at = datetime.now(UTC)
         self.db.flush()
         return {"ok": True, "activity_id": str(activity.id)}
+
+    def crm_score_contact(self, email: str) -> dict[str, Any]:
+        from app.services import crm_ai
+
+        row = self._contact_by_email(email)
+        if row is None:
+            return {"ok": False, "error": "Contact not found"}
+        result = crm_ai.score_contact(row)
+        row.signal_score = result["signal_score"]
+        row.temperature = result["temperature"]
+        if result.get("next_action"):
+            row.next_action = result["next_action"]
+        self.db.flush()
+        return {"ok": True, **result, "contact_id": str(row.id)}
+
+    def crm_overdue(self) -> dict[str, Any]:
+        from app.services.crm import overdue_contacts
+
+        rows = overdue_contacts(self.db, self.brand.id)
+        return {
+            "ok": True,
+            "contacts": [
+                {
+                    "id": str(c.id),
+                    "name": c.name,
+                    "email": c.email,
+                    "next_action": c.next_action,
+                    "signal_score": c.signal_score,
+                    "last_touch_at": c.last_touch_at.isoformat() if c.last_touch_at else None,
+                }
+                for c in rows
+            ],
+        }

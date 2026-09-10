@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { RunningWork } from "@/components/RunningWork";
 import { Shell, money, pill } from "@/components/Shell";
 import { WorkInline, WorkLoader } from "@/components/WorkLoader";
@@ -31,6 +31,17 @@ export default function BrandPage() {
 
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
+  const [memory, setMemory] = useState({ mission: "", voice_notes: "", audience: "", guidelines: "" });
+
+  useEffect(() => {
+    if (!brand) return;
+    setMemory({
+      mission: brand.mission || "",
+      voice_notes: brand.voice_notes || "",
+      audience: brand.audience || "",
+      guidelines: brand.guidelines || "",
+    });
+  }, [brand]);
 
   const createCampaign = useMutation({
     mutationFn: () =>
@@ -43,6 +54,15 @@ export default function BrandPage() {
       setGoal("");
       qc.invalidateQueries({ queryKey: ["campaigns", id] });
     },
+  });
+
+  const saveMemory = useMutation({
+    mutationFn: () =>
+      api(`/brands/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(memory),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["brand", id] }),
   });
 
   const decide = useMutation({
@@ -91,6 +111,12 @@ export default function BrandPage() {
         <Link href={`/brands/${id}/godmode`} className="btn-primary">
           CMO God Mode
         </Link>
+        <Link href={`/brands/${id}/approvals`} className="btn-ghost">
+          Approvals
+        </Link>
+        <Link href={`/brands/${id}/calendar`} className="btn-ghost">
+          Calendar
+        </Link>
         <Link href={`/brands/${id}/crm`} className="btn-ghost">
           Neural CRM
         </Link>
@@ -132,7 +158,47 @@ export default function BrandPage() {
       </div>
 
       {brand && (
-        <section className="card mt-8 grid gap-4 p-5 md:grid-cols-3">
+        <form
+          className="card mt-8 space-y-3 p-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveMemory.mutate();
+          }}
+        >
+          <h2 className="font-serif text-2xl">Brand memory</h2>
+          <p className="text-sm text-ink/60">Feeds every agent prompt. Keep this current.</p>
+          <textarea
+            className="field min-h-16"
+            placeholder="Mission"
+            value={memory.mission}
+            onChange={(e) => setMemory((m) => ({ ...m, mission: e.target.value }))}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Voice / tone"
+            value={memory.voice_notes}
+            onChange={(e) => setMemory((m) => ({ ...m, voice_notes: e.target.value }))}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Audience"
+            value={memory.audience}
+            onChange={(e) => setMemory((m) => ({ ...m, audience: e.target.value }))}
+          />
+          <textarea
+            className="field min-h-16"
+            placeholder="Do's / don'ts"
+            value={memory.guidelines}
+            onChange={(e) => setMemory((m) => ({ ...m, guidelines: e.target.value }))}
+          />
+          <button className="btn-primary" type="submit" disabled={saveMemory.isPending}>
+            Save brand memory
+          </button>
+        </form>
+      )}
+
+      {brand && (
+        <section className="card mt-4 grid gap-4 p-5 md:grid-cols-3">
           <div>
             <div className="text-xs uppercase tracking-wide text-clay">Website</div>
             <div className="mt-1 break-all text-sm">{brand.website_url || "Optional — not set"}</div>
@@ -179,7 +245,7 @@ export default function BrandPage() {
           <h2 className="font-serif text-2xl sm:text-3xl">Campaigns</h2>
           <div className="mt-4 space-y-3">
             {campaigns.map((c) => (
-              <Link key={c.id} href={`/brands/${id}/campaigns/${c.id}`} className="card block min-w-0 p-5 hover:bg-white/[0.07]">
+              <Link key={c.id} href={`/brands/${id}/campaigns/${c.id}`} className="card block min-w-0 p-5 hover:bg-paper">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="min-w-0 break-words font-serif text-xl sm:text-2xl">{c.name}</h3>
                   {pill(c.status)}
@@ -205,7 +271,12 @@ export default function BrandPage() {
           </form>
         </div>
         <div className="min-w-0">
-          <h2 className="font-serif text-2xl sm:text-3xl">Approvals</h2>
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="font-serif text-2xl sm:text-3xl">Approvals</h2>
+            <Link href={`/brands/${id}/approvals`} className="text-sm text-cyan">
+              Open queue →
+            </Link>
+          </div>
           <div className="mt-4 space-y-3">
             {approvals.length === 0 && <p className="text-sm text-ink/50">Nothing waiting on the board.</p>}
             {approvals.map((a) => (

@@ -26,11 +26,11 @@ export function Markdown({ children }: { children: string }) {
           ),
           code: ({ className, children }) =>
             className ? (
-              <pre className="mb-3 overflow-x-auto rounded-xl bg-void p-3 text-xs">
+              <pre className="mb-3 overflow-x-auto rounded-xl bg-paper p-3 text-xs">
                 <code>{children}</code>
               </pre>
             ) : (
-              <code className="rounded bg-void px-1.5 py-0.5 text-[13px]">{children}</code>
+              <code className="rounded bg-paper px-1.5 py-0.5 text-[13px]">{children}</code>
             ),
           blockquote: ({ children }) => (
             <blockquote className="mb-3 border-l-2 border-violet/50 pl-3 text-clay">{children}</blockquote>
@@ -42,8 +42,8 @@ export function Markdown({ children }: { children: string }) {
               <table className="w-full text-left text-xs">{children}</table>
             </div>
           ),
-          th: ({ children }) => <th className="border-b border-white/15 px-2 py-1">{children}</th>,
-          td: ({ children }) => <td className="border-b border-white/5 px-2 py-1">{children}</td>,
+          th: ({ children }) => <th className="border-b border-line px-2 py-1">{children}</th>,
+          td: ({ children }) => <td className="border-b border-line px-2 py-1">{children}</td>,
         }}
       >
         {children}

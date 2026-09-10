@@ -9,9 +9,11 @@ from app.api.v1 import (
     campaigns,
     command,
     connectors,
+    content,
     crm,
     godmode,
     meta,
+    notifications,
     runs,
     tasks,
 )
@@ -30,3 +32,5 @@ api_router.include_router(godmode.router)
 api_router.include_router(crm.router)
 api_router.include_router(command.router)
 api_router.include_router(meta.router)
+api_router.include_router(content.router)
+api_router.include_router(notifications.router)

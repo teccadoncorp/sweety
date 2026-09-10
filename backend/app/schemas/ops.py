@@ -24,6 +24,7 @@ class CommandOut(BaseModel):
     ready_tasks: int
     pending_approvals: int
     crm_hot: int
+    agents_paused: bool = False
     agents: list[CommandAgentOut]
 
 

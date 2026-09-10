@@ -22,7 +22,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Sweety", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title=get_settings().app_name, version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origin_list(),
@@ -39,4 +39,4 @@ app.mount("/media", StaticFiles(directory=str(media_path)), name="media")
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "name": "sweety"}
+    return {"ok": True, "name": get_settings().app_name}

@@ -171,7 +171,7 @@ export default function StudioPage() {
                           ? "border-cyan/50 bg-cyan/15 text-cyan"
                           : rec
                             ? "border-violet/40 text-violet"
-                            : "border-white/10 text-clay"
+                            : "border-line text-clay"
                       }`}
                     >
                       {skill.name}

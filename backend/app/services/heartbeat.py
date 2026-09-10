@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters import get_adapter
 from app.adapters.base import RunContext, all_adapters
+from app.core.config import get_settings
 from app.models.agent import Agent
 from app.models.brand import Brand
 from app.models.campaign import Campaign
@@ -16,6 +17,7 @@ from app.models.heartbeat_run import HeartbeatRun
 from app.models.task import Task
 from app.models.usage import UsageEvent
 from app.services.budget import budget_block_reason
+from app.services.loop import brand_memory_block, ensure_launch_campaign
 from app.services.sanitize import sanitize_json, strip_nuls
 from app.services.skills import render_skill_block
 from app.tools.agent_tools import TOOL_SPECS, ToolExecutor
@@ -23,7 +25,11 @@ from app.tools.agent_tools import TOOL_SPECS, ToolExecutor
 
 def due_agents(db: Session) -> list[Agent]:
     now = datetime.now(UTC)
-    agents = db.scalars(select(Agent).where(Agent.status == "active")).all()
+    agents = db.scalars(
+        select(Agent)
+        .join(Brand, Agent.brand_id == Brand.id)
+        .where(Agent.status == "active", Brand.agents_paused.is_(False))
+    ).all()
     due: list[Agent] = []
     for agent in agents:
         if agent.last_heartbeat_at is None:
@@ -56,21 +62,23 @@ def build_user_prompt(db: Session, brand: Brand, agent: Agent) -> str:
     for t in inbox:
         task_lines.append(f"- [{t.status}] {t.title} id={t.id} campaign={t.campaign_id}")
 
-    return f"""You are on a scheduled heartbeat for Sweety, a marketing control plane.
+    return f"""You are on a scheduled heartbeat for {get_settings().app_name}, a marketing control plane.
 
 Brand: {brand.name}
 Mission: {brand.mission}
-Voice: {brand.voice_notes}
+{brand_memory_block(brand)}
 
 Your role: {agent.title} ({agent.role})
 
 Open campaigns:
-{chr(10).join(campaign_lines) or '- none'}
+{chr(10).join(campaign_lines) or '- none — if you are the CMO, create_campaign from the mission NOW'}
 
 Your inbox:
 {chr(10).join(task_lines) or '- empty'}
 
-Work only through tools. Check out a task before editing it. Post artifacts for briefs and copy. Request board approval for strategy and publish.
+Work only through tools. Check out a task before editing it. Post artifacts for briefs and copy. Request board approval for strategy and publish. Never auto-publish.
+
+If you are the CMO and a draft campaign has no brief, write it this heartbeat with post_artifact(kind=campaign-brief). If you are copywriter or social and a first-post task is open, draft the actual post (kind=social-copy) and queue it with post_social. If you are strategist, post a dated content calendar.
 
 You can run alongside teammates — do not wait for them. Use CRM tools when scoring leads or moving deals.
 
@@ -96,11 +104,20 @@ def run_heartbeat(db: Session, agent_id: UUID, trigger: str = "schedule") -> Hea
     db.add(run)
     db.flush()
 
+    if getattr(brand, "agents_paused", False):
+        run.status = "blocked"
+        run.result_summary = "Kill switch is on — all agents paused"
+        db.commit()
+        return run
+
     if agent.status != "active":
         run.status = "blocked"
         run.result_summary = f"Agent is {agent.status}"
         db.commit()
         return run
+
+    if agent.role == "cmo":
+        ensure_launch_campaign(db, brand)
 
     blocked = budget_block_reason(db, brand, agent)
     if blocked:
@@ -111,12 +128,14 @@ def run_heartbeat(db: Session, agent_id: UUID, trigger: str = "schedule") -> Hea
         return run
 
     skills_text = render_skill_block(agent.role, agent.skill_slugs or [])
+    name = get_settings().app_name
     system_prompt = (
         f"{agent.system_prompt}\n\n"
-        "You operate inside Sweety. Use tools: search the web, generate images, "
+        f"You operate inside {name}. Use tools: search the web, generate images, "
         "create HeyGen videos, call MCP tools, and queue social posts. "
         "Live posts to Reddit/X/LinkedIn/Facebook/Instagram go through board approval. "
-        "Check list_connectors before posting. Never invent a successful publish.\n\n"
+        "Check list_connectors before posting. Never invent a successful publish.\n"
+        f"{brand_memory_block(brand)}\n\n"
         f"{skills_text}"
     )
     user_prompt = build_user_prompt(db, brand, agent)

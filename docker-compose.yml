@@ -101,9 +101,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_APP_NAME: ${APP_NAME:-Sweety}
     environment:
       NODE_ENV: production
       API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_APP_NAME: ${APP_NAME:-Sweety}
     depends_on:
       - api
     ports:

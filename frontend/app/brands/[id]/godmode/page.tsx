@@ -75,7 +75,7 @@ export default function GodModePage() {
   return (
     <Shell brandId={id} full>
       <div className="mx-auto flex h-full min-h-0 w-full min-w-0 max-w-3xl flex-1 flex-col px-3 sm:px-4">
-        <div className="shrink-0 border-b border-white/10 py-3">
+        <div className="shrink-0 border-b border-line bg-white py-3">
           <p className="text-xs uppercase tracking-[0.2em] text-cyan">CMO God Mode</p>
           <h1 className="font-serif text-2xl sm:text-3xl">{brand?.name || "Brief the CMO"}</h1>
           <p className="mt-1 hidden text-sm text-clay sm:block">
@@ -86,7 +86,7 @@ export default function GodModePage() {
         <div ref={scroller} className="chat-scroll min-h-0 flex-1 space-y-4 overflow-y-auto py-4 sm:py-6">
           {isLoading && <WorkInline label="Loading conversation" />}
           {!isLoading && messages.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-white/15 p-8 text-center">
+            <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center">
               <p className="font-serif text-3xl">What should we run?</p>
               <p className="mt-2 text-sm text-clay">
                 Website {brand?.website_url || "—"} · App {brand?.app_url || "—"} · Logo{" "}
@@ -108,8 +108,8 @@ export default function GodModePage() {
                 key={m.id}
                 className={
                   m.role === "user"
-                    ? "ml-2 rounded-2xl bg-violet/20 px-4 py-3 sm:ml-12"
-                    : "mr-2 min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:mr-8"
+                    ? "ml-2 rounded-xl bg-violet/10 px-4 py-3 sm:ml-12"
+                    : "mr-2 min-w-0 rounded-xl border border-line bg-white px-4 py-3 sm:mr-8"
                 }
               >
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-clay">
@@ -133,13 +133,13 @@ export default function GodModePage() {
           {send.isPending && <WorkInline label="CMO is planning the brief" />}
         </div>
 
-        <form onSubmit={onSubmit} className="sticky bottom-0 z-10 shrink-0 border-t border-white/10 bg-void/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        <form onSubmit={onSubmit} className="sticky bottom-0 z-10 shrink-0 border-t border-line bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
           <div className="mb-2 flex flex-wrap gap-2">
             {PLATFORMS.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                className="rounded-full border border-white/15 px-3 py-1 text-xs text-cyan hover:bg-white/10"
+                className="rounded-lg border border-line px-3 py-1 text-xs text-violet hover:bg-paper"
                 onClick={() =>
                   submit(`Generate the image for ${p.label}. Use platform=${p.id} and the correct aspect ratio.`)
                 }
@@ -148,7 +148,7 @@ export default function GodModePage() {
               </button>
             ))}
           </div>
-          <div className="flex items-end gap-2 rounded-2xl border border-white/15 bg-void/70 p-2">
+          <div className="flex items-end gap-2 rounded-xl border border-line bg-paper p-2">
             <textarea
               className="field min-h-[52px] flex-1 resize-none border-0 bg-transparent"
               placeholder="Describe the campaign — or tap a platform after asking for an image…"

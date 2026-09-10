@@ -32,6 +32,8 @@ def maybe_execute_publish_approval(db: Session, approval: Approval) -> dict[str,
     payload = approval.payload or {}
     if not payload.get("platform"):
         return None
+    if payload.get("publish_result") or payload.get("content_item_id"):
+        return payload.get("publish_result")
     result = execute_social_payload(db, approval.brand_id, payload)
     payload = dict(payload)
     payload["publish_result"] = result

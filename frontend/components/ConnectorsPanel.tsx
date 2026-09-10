@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { pill } from "@/components/Shell";
 import { api } from "@/lib/api";
+import { useAppName } from "@/lib/branding";
 
 type Provider = {
   id: string;
@@ -29,6 +30,7 @@ type Connector = {
 };
 
 export function ConnectorsPanel({ brandId }: { brandId: string }) {
+  const appName = useAppName();
   const qc = useQueryClient();
   const { data: catalog } = useQuery({
     queryKey: ["catalog"],
@@ -98,7 +100,7 @@ export function ConnectorsPanel({ brandId }: { brandId: string }) {
         </p>
         <dl className="mt-4 grid gap-2 text-sm md:grid-cols-2">
           {Object.entries(catalog?.models || {}).map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-3 rounded-xl bg-ink/[0.03] px-3 py-2">
+            <div key={k} className="flex justify-between gap-3 rounded-xl bg-paper px-3 py-2">
               <dt className="capitalize">{k}</dt>
               <dd className="text-ink/70">{v}</dd>
             </div>
@@ -183,12 +185,12 @@ export function ConnectorsPanel({ brandId }: { brandId: string }) {
       <section className="card p-6">
         <h2 className="font-serif text-2xl">MCP servers</h2>
         <p className="mt-2 text-sm text-ink/65">
-          Point Sweety at an MCP server (HTTP/SSE URL or a stdio command). Agents can list and call its
+          Point {appName} at an MCP server (HTTP/SSE URL or a stdio command). Agents can list and call its
           tools on heartbeat.
         </p>
         <div className="mt-4 space-y-2">
           {mcp.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-xl bg-ink/[0.03] px-3 py-2 text-sm">
+            <div key={s.id} className="flex items-center justify-between rounded-xl bg-paper px-3 py-2 text-sm">
               <div>
                 <div className="font-medium">{s.name}</div>
                 <div className="text-ink/50">

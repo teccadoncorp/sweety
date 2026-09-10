@@ -8,9 +8,10 @@ from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.models.brand import Brand
 from app.models.user import User
-from app.schemas.common import BrandIn, BrandOut, BrandUpdate
+from app.schemas.common import BrandIn, BrandOut, BrandUpdate, KillSwitchIn
 from app.services.access import get_brand_for_user
 from app.services.budget import spent_for_brand, spent_map_for_brands
+from app.services.loop import queue_launch_heartbeats, spawn_launch_campaign
 from app.services.seed import seed_default_org
 
 router = APIRouter(prefix="/brands", tags=["brands"])
@@ -38,6 +39,8 @@ def create_brand(
         name=payload.name,
         mission=payload.mission,
         voice_notes=payload.voice_notes,
+        audience=payload.audience,
+        guidelines=payload.guidelines,
         logo_url=payload.logo_url,
         website_url=payload.website_url,
         app_url=payload.app_url,
@@ -45,10 +48,14 @@ def create_brand(
     )
     db.add(brand)
     db.flush()
+    wake_ids: list = []
     if payload.seed_org:
         seed_default_org(db, brand)
+        _, wake_ids = spawn_launch_campaign(db, brand)
     db.commit()
     db.refresh(brand)
+    if wake_ids and not brand.agents_paused:
+        queue_launch_heartbeats(wake_ids, "launch")
     return _out(db, brand)
 
 
@@ -69,6 +76,20 @@ def update_brand(
     brand = get_brand_for_user(db, brand_id, user.id)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(brand, key, value)
+    db.commit()
+    db.refresh(brand)
+    return _out(db, brand)
+
+
+@router.post("/{brand_id}/kill-switch", response_model=BrandOut)
+def set_kill_switch(
+    brand_id: UUID,
+    payload: KillSwitchIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> BrandOut:
+    brand = get_brand_for_user(db, brand_id, user.id)
+    brand.agents_paused = payload.paused
     db.commit()
     db.refresh(brand)
     return _out(db, brand)

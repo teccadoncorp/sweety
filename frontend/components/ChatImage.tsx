@@ -44,14 +44,14 @@ export function ChatImage({ src, alt = "" }: { src: string; alt?: string }) {
   }
 
   return (
-    <div className="group relative my-3 overflow-hidden rounded-xl border border-white/10 bg-void">
+    <div className="group relative my-3 overflow-hidden rounded-xl border border-line bg-paper">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={href} alt={alt} className="max-h-[28rem] w-full object-contain" />
       <button
         type="button"
         onClick={onDownload}
         disabled={busy}
-        className="absolute bottom-3 right-3 rounded-full border border-white/20 bg-void/85 px-3 py-1.5 text-xs text-ink backdrop-blur hover:bg-void"
+        className="absolute bottom-3 right-3 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm hover:bg-paper"
       >
         {busy ? "Saving…" : "Download"}
       </button>

@@ -34,6 +34,8 @@ class BrandIn(BaseModel):
     name: str
     mission: str = ""
     voice_notes: str = ""
+    audience: str = ""
+    guidelines: str = ""
     logo_url: str = ""
     website_url: str = ""
     app_url: str = ""
@@ -45,6 +47,8 @@ class BrandUpdate(BaseModel):
     name: str | None = None
     mission: str | None = None
     voice_notes: str | None = None
+    audience: str | None = None
+    guidelines: str | None = None
     logo_url: str | None = None
     website_url: str | None = None
     app_url: str | None = None
@@ -57,12 +61,19 @@ class BrandOut(ORMModel):
     name: str
     mission: str
     voice_notes: str
+    audience: str = ""
+    guidelines: str = ""
+    agents_paused: bool = False
     logo_url: str = ""
     website_url: str = ""
     app_url: str = ""
     monthly_budget_usd: Decimal
     created_at: datetime
     spent_usd: Decimal = Decimal("0")
+
+
+class KillSwitchIn(BaseModel):
+    paused: bool
 
 
 class AgentIn(BaseModel):
@@ -219,6 +230,9 @@ class ApprovalOut(ORMModel):
 
 class ApprovalDecideIn(BaseModel):
     status: str = Field(pattern="^(approved|rejected)$")
+    text: str | None = None
+    title: str | None = None
+    scheduled_for: datetime | None = None
 
 
 class UsageOut(BaseModel):

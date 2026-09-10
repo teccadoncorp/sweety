@@ -70,7 +70,7 @@ def provider_specs() -> list[ProviderSpec]:
             id="facebook",
             label="Facebook Pages",
             auth="oauth",
-            description="Login with Facebook, then pick the Page Sweety should post to.",
+            description=f"Login with Facebook, then pick the Page {get_settings().app_name} should post to.",
             connect_hint="Meta app with Facebook Login. Redirect {api}/api/v1/connectors/callback/facebook",
             scopes=["pages_show_list", "pages_manage_posts", "pages_read_engagement"],
             manual_fields=["access_token", "page_id"],

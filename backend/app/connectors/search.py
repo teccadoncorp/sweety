@@ -51,7 +51,7 @@ def search_web(query: str, brand_id=None, db=None) -> dict[str, Any]:
         headers={
             "Authorization": f"Bearer {settings.openrouter_api_key}",
             "HTTP-Referer": settings.sweety_public_url,
-            "X-Title": "Sweety",
+            "X-Title": settings.app_name,
         },
         json={
             "model": model_map()["search"],

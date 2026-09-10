@@ -10,6 +10,14 @@ from app.core.db import Base
 
 DEAL_STAGES = ["signal", "qualify", "propose", "commit", "won", "lost"]
 CONTACT_TEMPS = ["ice", "cool", "warm", "hot", "star"]
+STAGE_PROBABILITY = {
+    "signal": 10,
+    "qualify": 25,
+    "propose": 50,
+    "commit": 75,
+    "won": 100,
+    "lost": 0,
+}
 
 
 class CrmAccount(Base):
@@ -89,6 +97,8 @@ class CrmDeal(Base):
     probability: Mapped[int] = mapped_column(Integer, default=20)
     close_date: Mapped[str] = mapped_column(String(32), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
+    lost_reason: Mapped[str] = mapped_column(String(400), default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -117,6 +127,7 @@ class CrmActivity(Base):
     kind: Mapped[str] = mapped_column(String(32), default="note")
     title: Mapped[str] = mapped_column(String(240), default="")
     body: Mapped[str] = mapped_column(Text, default="")
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     contact = relationship("CrmContact", back_populates="activities")
