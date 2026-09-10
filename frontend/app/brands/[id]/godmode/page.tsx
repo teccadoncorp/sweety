@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { ChatImage } from "@/components/ChatImage";
 import { Markdown } from "@/components/Markdown";
 import { Shell } from "@/components/Shell";
 import { WorkInline } from "@/components/WorkLoader";
@@ -34,7 +35,7 @@ function imagesOf(m: ChatMessage) {
 export default function GodModePage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
-  const bottom = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
   const { data: brand } = useQuery({
     queryKey: ["brand", id],
@@ -54,7 +55,9 @@ export default function GodModePage() {
   });
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, send.isPending]);
 
   function submit(text: string) {
@@ -71,16 +74,16 @@ export default function GodModePage() {
 
   return (
     <Shell brandId={id} full>
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-3xl flex-1 flex-col px-3 sm:px-4">
-        <div className="shrink-0 border-b border-white/10 py-4">
+      <div className="mx-auto flex h-full min-h-0 w-full min-w-0 max-w-3xl flex-1 flex-col px-3 sm:px-4">
+        <div className="shrink-0 border-b border-white/10 py-3">
           <p className="text-xs uppercase tracking-[0.2em] text-cyan">CMO God Mode</p>
-          <h1 className="font-serif text-3xl">{brand?.name || "Brief the CMO"}</h1>
-          <p className="mt-1 text-sm text-clay">
+          <h1 className="font-serif text-2xl sm:text-3xl">{brand?.name || "Brief the CMO"}</h1>
+          <p className="mt-1 hidden text-sm text-clay sm:block">
             Markdown plans, generated images, and platform-sized frames. Pick a network before we render a still.
           </p>
         </div>
 
-        <div className="chat-scroll min-h-0 flex-1 space-y-4 overflow-y-auto py-4 sm:py-6">
+        <div ref={scroller} className="chat-scroll min-h-0 flex-1 space-y-4 overflow-y-auto py-4 sm:py-6">
           {isLoading && <WorkInline label="Loading conversation" />}
           {!isLoading && messages.length === 0 && (
             <div className="rounded-3xl border border-dashed border-white/15 p-8 text-center">
@@ -120,13 +123,7 @@ export default function GodModePage() {
                 {m.role === "assistant" && imgs.length > 0 && !/!\[[^\]]*]\(https?:/.test(m.content) && (
                   <div className="mt-3 grid gap-3">
                     {imgs.map((src) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={src}
-                        src={src}
-                        alt="Generated visual"
-                        className="max-h-[28rem] w-full rounded-xl border border-white/10 bg-void object-contain"
-                      />
+                      <ChatImage key={src} src={src} alt="Generated visual" />
                     ))}
                   </div>
                 )}
@@ -134,10 +131,9 @@ export default function GodModePage() {
             );
           })}
           {send.isPending && <WorkInline label="CMO is planning the brief" />}
-          <div ref={bottom} />
         </div>
 
-        <form onSubmit={onSubmit} className="shrink-0 border-t border-white/10 py-4">
+        <form onSubmit={onSubmit} className="sticky bottom-0 z-10 shrink-0 border-t border-white/10 bg-void/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
           <div className="mb-2 flex flex-wrap gap-2">
             {PLATFORMS.map((p) => (
               <button

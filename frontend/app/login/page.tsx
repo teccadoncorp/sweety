@@ -31,7 +31,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6">
+    <div className="mx-auto flex h-dvh max-w-lg flex-col justify-center overflow-y-auto px-6">
       <p className="text-sm uppercase tracking-[0.2em] text-cyan">CMO command plane</p>
       <h1 className="mt-3 font-serif text-4xl leading-none sm:text-6xl">Sweety</h1>
       <p className="mt-4 max-w-md text-clay">

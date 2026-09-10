@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { publicAsset } from "@/lib/api";
+import { ChatImage } from "@/components/ChatImage";
 
 export function Markdown({ children }: { children: string }) {
   return (
@@ -36,14 +36,7 @@ export function Markdown({ children }: { children: string }) {
             <blockquote className="mb-3 border-l-2 border-violet/50 pl-3 text-clay">{children}</blockquote>
           ),
           img: ({ src, alt }) =>
-            src ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={publicAsset(typeof src === "string" ? src : undefined) || String(src)}
-                alt={alt || ""}
-                className="my-3 max-h-[28rem] w-full rounded-xl border border-white/10 object-contain bg-void"
-              />
-            ) : null,
+            src ? <ChatImage src={typeof src === "string" ? src : String(src)} alt={alt || ""} /> : null,
           table: ({ children }) => (
             <div className="mb-3 overflow-x-auto">
               <table className="w-full text-left text-xs">{children}</table>
