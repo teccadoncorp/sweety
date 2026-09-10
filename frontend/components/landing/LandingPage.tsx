@@ -1,104 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppName } from "@/lib/branding";
 import { getToken } from "@/lib/api";
-import { Reveal, useCountUp } from "@/components/landing/Reveal";
+import { ProductStage, type ProductView } from "@/components/landing/ProductMocks";
 
-const WORDS = ["campaigns", "features", "approvals", "the swarm"];
-
-const CASES = [
-  {
-    slug: "aurora",
-    eyebrow: "Retail · 14 days",
-    title: "Aurora Atelier shipped a Spring Edit without a 12-person studio.",
-    body: "The board briefed God Mode once. Copy, stills, and a calendar came back the same week — nothing live until they approved it.",
-    image: "/landing/case-aurora.png",
-    quote: "We stopped briefing five agencies. The CMO wrote the plan. We just said yes.",
-    person: "Lina Voss, Founder",
-    metrics: [
-      { k: "11", v: "assets approved" },
-      { k: "3.4×", v: "content output" },
-      { k: "0", v: "unapproved posts" },
-    ],
-  },
-  {
-    slug: "northline",
-    eyebrow: "B2B SaaS · 1 quarter",
-    title: "Northline turned a quiet CRM into a scored pipeline the sales floor actually used.",
-    body: "Agents researched accounts, warmed contacts, and moved deals. Humans kept the kill switch and the close.",
-    image: "/landing/case-northline.png",
-    quote: "Hot leads showed up scored. We stopped guessing who to call on Monday.",
-    person: "Marcus Hale, VP Revenue",
-    metrics: [
-      { k: "+$420k", v: "pipeline" },
-      { k: "38", v: "hot accounts" },
-      { k: "6", v: "agents in the swarm" },
-    ],
-  },
-  {
-    slug: "harbor",
-    eyebrow: "Healthtech · product",
-    title: "Harbor Health let God Mode write features — then shipped them on a real board.",
-    body: "Marketing God Mode created epics. The Task console turned them into stories, owners, and a done column.",
-    image: "/landing/case-harbor.png",
-    quote: "The brief became a feature key. Engineering finally saw what the board meant.",
-    person: "Priya Shah, Head of Product",
-    metrics: [
-      { k: "28", v: "features created" },
-      { k: "91", v: "issues closed" },
-      { k: "2", v: "consoles, one DB" },
-    ],
-  },
+const TABS: { id: ProductView; label: string }[] = [
+  { id: "godmode", label: "God Mode" },
+  { id: "approvals", label: "Approvals" },
+  { id: "tasks", label: "Task console" },
 ];
 
-function WordCycle() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => setI((n) => (n + 1) % WORDS.length), 2400);
-    return () => window.clearInterval(id);
-  }, []);
-  return (
-    <span className="lp-cycle" aria-live="polite">
-      {WORDS.map((word, idx) => (
-        <span key={word} className={idx === i ? "is-on" : ""}>
-          {word}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function Stat({ n, suffix, label }: { n: number; suffix: string; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [on, setOn] = useState(false);
-  const value = useCountUp(n, on);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && setOn(true), { threshold: 0.4 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className="lp-stat">
-      <strong>
-        {value}
-        {suffix}
-      </strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-export function LandingPage() {
+export function LandingPage({ fontClass = "" }: { fontClass?: string }) {
   const appName = useAppName();
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
   const [inApp, setInApp] = useState(false);
-  const heroImg = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<ProductView>("godmode");
 
   useEffect(() => {
     setInApp(Boolean(getToken()));
@@ -107,13 +26,7 @@ export function LandingPage() {
   useEffect(() => {
     const root = document.querySelector(".landing-shell");
     if (!root) return;
-    const onScroll = () => {
-      setScrolled(root.scrollTop > 12);
-      if (heroImg.current) {
-        const y = Math.min(48, root.scrollTop * 0.12);
-        heroImg.current.style.transform = `translateY(${y}px) scale(1.04)`;
-      }
-    };
+    const onScroll = () => setScrolled(root.scrollTop > 8);
     root.addEventListener("scroll", onScroll, { passive: true });
     return () => root.removeEventListener("scroll", onScroll);
   }, []);
@@ -121,23 +34,24 @@ export function LandingPage() {
   const consoleHref = inApp ? "/brands" : "/login";
 
   return (
-    <div className="landing-shell">
-      <div className="lp-bg" aria-hidden />
-
+    <div className={`landing-shell ${fontClass}`}>
       <header className={`lp-nav ${scrolled ? "is-scrolled" : ""}`}>
-        <Link href="/" className="login-brand">
-          <span className="login-mark">{appName.slice(0, 1)}</span>
-          <span>{appName}</span>
+        <Link href="/" className="lp-logo">
+          <span>{appName.slice(0, 1)}</span>
+          {appName}
         </Link>
         <nav className="lp-nav-links">
           <a href="#product">Product</a>
-          <a href="#cases">Case studies</a>
-          <a href="#work">How it works</a>
+          <a href="#gate">Consent</a>
+          <a href="#how">How it works</a>
           <Link href="/pm/login">Task console</Link>
         </nav>
         <div className="lp-nav-cta">
-          <Link href={consoleHref} className="btn-primary">
-            Enter God Mode
+          <Link href="/login" className="lp-text">
+            Sign in
+          </Link>
+          <Link href={consoleHref} className="lp-btn-solid">
+            Open console
           </Link>
           <button type="button" className="lp-burger" aria-label="Menu" onClick={() => setMenu((v) => !v)}>
             Menu
@@ -150,239 +64,180 @@ export function LandingPage() {
           <a href="#product" onClick={() => setMenu(false)}>
             Product
           </a>
-          <a href="#cases" onClick={() => setMenu(false)}>
-            Case studies
+          <a href="#gate" onClick={() => setMenu(false)}>
+            Consent
           </a>
-          <a href="#work" onClick={() => setMenu(false)}>
+          <a href="#how" onClick={() => setMenu(false)}>
             How it works
           </a>
           <Link href="/pm/login" onClick={() => setMenu(false)}>
             Task console
           </Link>
-          <Link href={consoleHref} className="btn-primary" onClick={() => setMenu(false)}>
-            Enter God Mode
+          <Link href={consoleHref} className="lp-btn-solid" onClick={() => setMenu(false)}>
+            Open console
           </Link>
         </div>
       )}
 
       <section className="lp-hero">
-        <Reveal>
-          <p className="lp-kicker">Marketing control plane</p>
-          <h1 className="lp-title">
-            Brief the CMO.
-            <br />
-            Ship <WordCycle />.
-          </h1>
-          <p className="lp-lede">
-            Agents write the campaign, score the pipeline, and open product features. You keep consent, the kill
-            switch, and the done column.
-          </p>
-          <div className="lp-hero-actions">
-            <Link href={consoleHref} className="btn-primary lp-btn">
-              Enter God Mode
-            </Link>
-            <Link href="/pm/login" className="lp-btn-ghost">
-              Open the Task console
-            </Link>
-          </div>
-        </Reveal>
-        <Reveal delay={120} className="lp-hero-frame">
-          <div className="lp-hero-meta">
-            <span>Live briefing</span>
-            <span className="lp-dot" />
-            <span>Consent gate on</span>
-          </div>
-          <div ref={heroImg} className="lp-hero-photo">
-            <Image
-              src="/landing/hero.png"
-              alt="A marketing command center watching campaign dashboards"
-              width={1600}
-              height={900}
-              priority
-            />
-          </div>
-          <div className="lp-float-row">
-            <article className="lp-chip">
-              <span>Campaign</span>
-              <strong>Spring Edit</strong>
-            </article>
-            <article className="lp-chip">
-              <span>Feature</span>
-              <strong>CORE-F12</strong>
-            </article>
-            <article className="lp-chip">
-              <span>Approvals</span>
-              <strong>3 waiting</strong>
-            </article>
-          </div>
-        </Reveal>
-      </section>
+        <h1>The control plane for marketing agents.</h1>
+        <p className="lp-lede">
+          {appName} runs a CMO, a content desk, and CRM behind a consent gate. Agents can draft and schedule. They
+          cannot publish until you approve.
+        </p>
+        <div className="lp-hero-actions">
+          <Link href={consoleHref} className="lp-btn-solid">
+            Open God Mode
+          </Link>
+          <Link href="/pm/login" className="lp-text-btn">
+            Task console
+          </Link>
+        </div>
+        <p className="lp-note">Consent gate on by default. Kill switch included. Separate login for product.</p>
 
-      <section className="lp-marquee" aria-hidden>
-        <div className="lp-marquee-track">
-          {["God Mode", "Approvals", "Calendar", "CRM swarm", "Kill switch", "Task console", "Features", "Kanban"].map(
-            (item) => (
-              <span key={item}>{item}</span>
-            ),
-          )}
-          {["God Mode", "Approvals", "Calendar", "CRM swarm", "Kill switch", "Task console", "Features", "Kanban"].map(
-            (item) => (
-              <span key={`${item}-2`}>{item}</span>
-            ),
-          )}
+        <div className="lp-tabs" role="tablist" aria-label="Product views">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={view === tab.id}
+              className={view === tab.id ? "is-on" : ""}
+              onClick={() => setView(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="lp-stage">
+          <ProductStage view={view} />
         </div>
       </section>
 
       <section id="product" className="lp-section">
-        <Reveal>
-          <p className="lp-kicker">Two consoles. One database.</p>
-          <h2 className="lp-h2">The board briefs. The org runs. Product ships.</h2>
-        </Reveal>
-        <div className="lp-split">
-          <Reveal className="lp-panel">
-            <p className="lp-panel-kicker">Marketing</p>
+        <div className="lp-section-head">
+          <h2>Two consoles. Same company, different keys.</h2>
+          <p>
+            Marketing lives in God Mode. Engineering lives on the Task console. They share a database, not a login.
+          </p>
+        </div>
+        <div className="lp-rows">
+          <article>
             <h3>God Mode</h3>
             <p>
-              Chat with the CMO. Campaigns, drafts, images, and CRM moves happen in tools — then wait on Approvals.
-              Nothing publishes until a human says go.
+              Chat with the CMO. It opens a campaign from the brand mission, wakes copy and research, and can create
+              features for product. The chat is the brief — not a prompt box that forgets the org.
             </p>
             <ul>
-              <li>Mission opens a first campaign</li>
-              <li>Swarm wakes in parallel</li>
-              <li>Create product features for the Task console</li>
+              <li>Mission creates the first campaign</li>
+              <li>Specialist agents run in parallel</li>
+              <li>Drafts land in Approvals, not on the network</li>
             </ul>
-            <Link href="/login" className="lp-text-link">
-              Sign in to God Mode →
-            </Link>
-          </Reveal>
-          <Reveal delay={100} className="lp-panel-visual">
-            <Image
-              src="/landing/product-godmode.png"
-              alt="God Mode briefing"
-              width={1280}
-              height={720}
-            />
-          </Reveal>
-        </div>
-        <div className="lp-split lp-split-rev">
-          <Reveal className="lp-panel">
-            <p className="lp-panel-kicker">Product</p>
+          </article>
+          <article>
             <h3>Task console</h3>
             <p>
-              A Jira-style board in its own login and schema. God Mode writes features. The team owns issues,
-              comments, and the done column.
+              A board with its own accounts and JWT. When marketing needs software, God Mode opens a feature. The team
+              owns stories, bugs, comments, and the done column.
             </p>
             <ul>
-              <li>Separate accounts and JWT</li>
-              <li>Projects, features, stories, bugs</li>
-              <li>Same Postgres — `pm` schema</li>
+              <li>Projects, features, issues</li>
+              <li>Separate people and permissions</li>
+              <li>Same Postgres, <code>pm</code> schema</li>
             </ul>
-            <Link href="/pm/login" className="lp-text-link">
-              Open the Task console →
-            </Link>
-          </Reveal>
-          <Reveal delay={100} className="lp-panel-visual lp-board-visual">
-            <div className="lp-mini-board">
-              {["Backlog", "Doing", "Review", "Done"].map((col, i) => (
-                <div key={col} className="lp-mini-col">
-                  <span>{col}</span>
-                  <i className={i === 3 ? "is-done" : ""} />
-                  <i className={i === 1 ? "is-live" : ""} />
-                  {i < 3 && <i />}
-                </div>
-              ))}
+          </article>
+        </div>
+      </section>
+
+      <section id="gate" className="lp-band">
+        <div className="lp-band-inner">
+          <div>
+            <h2>Nothing goes live from a model.</h2>
+            <p>
+              Every post, still, and social publish sits in Approvals. Edit the copy, reject it, or sign it off.
+              LinkedIn and Instagram only fire after that. If the room looks wrong, the kill switch pauses every agent
+              on the brand.
+            </p>
+            <dl>
+              <div>
+                <dt>Approvals</dt>
+                <dd>Consent queue. Edit, approve, reject. No auto-publish.</dd>
+              </div>
+              <div>
+                <dt>Calendar</dt>
+                <dd>Drafts, scheduled posts, and published work by date.</dd>
+              </div>
+              <div>
+                <dt>CRM</dt>
+                <dd>Hot contacts open a real list, not a vanity counter.</dd>
+              </div>
+              <div>
+                <dt>Kill switch</dt>
+                <dd>One control. Entire org paused until you resume.</dd>
+              </div>
+            </dl>
+          </div>
+          <ProductStage view="approvals" />
+        </div>
+      </section>
+
+      <section id="how" className="lp-section">
+        <div className="lp-section-head">
+          <h2>How a brand actually runs</h2>
+          <p>Four steps. Humans stay on the gate the whole way.</p>
+        </div>
+        <ol className="lp-how">
+          <li>
+            <span>01</span>
+            <div>
+              <strong>Create a brand and write the mission</strong>
+              <p>The CMO opens a campaign and puts work on copy and strategy. There is no empty org.</p>
             </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="lp-stats">
-        <Stat n={12} suffix="" label="specialist agents in the org" />
-        <Stat n={40} suffix="+" label="skills the swarm can run" />
-        <Stat n={0} suffix="" label="posts live without consent" />
-        <Stat n={1} suffix="" label="kill switch for the room" />
-      </section>
-
-      <section id="cases" className="lp-section">
-        <Reveal>
-          <p className="lp-kicker">Case studies</p>
-          <h2 className="lp-h2">Rooms that briefed once, then watched the work land.</h2>
-        </Reveal>
-        <div className="lp-cases">
-          {CASES.map((item, idx) => (
-            <Reveal key={item.slug} className={`lp-case ${idx === 0 ? "is-lead" : ""}`}>
-              <div className="lp-case-photo">
-                <Image src={item.image} alt={item.title} width={1200} height={900} />
-              </div>
-              <div className="lp-case-body">
-                <p className="lp-panel-kicker">{item.eyebrow}</p>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-                <blockquote>
-                  “{item.quote}”
-                  <cite>{item.person}</cite>
-                </blockquote>
-                <div className="lp-case-metrics">
-                  {item.metrics.map((m) => (
-                    <div key={m.v}>
-                      <strong>{m.k}</strong>
-                      <span>{m.v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      <section id="work" className="lp-section">
-        <Reveal>
-          <p className="lp-kicker">How it works</p>
-          <h2 className="lp-h2">Four moves. Humans stay on the gate.</h2>
-        </Reveal>
-        <ol className="lp-steps">
-          {[
-            ["Brief", "Tell God Mode the mission, the audience, the date. Optional logo and site."],
-            ["Watch", "The CMO opens a campaign, writes tasks, and wakes the swarm."],
-            ["Consent", "Approvals hold every publish. One kill switch pauses the org."],
-            ["Ship", "Product features land on the Task console. The board closes the loop."],
-          ].map(([t, d], i) => (
-            <Reveal key={t} delay={i * 80}>
-              <li>
-                <span>0{i + 1}</span>
-                <strong>{t}</strong>
-                <p>{d}</p>
-              </li>
-            </Reveal>
-          ))}
+          </li>
+          <li>
+            <span>02</span>
+            <div>
+              <strong>Brief God Mode</strong>
+              <p>Agents draft posts, score accounts, and can open product features. You watch Command.</p>
+            </div>
+          </li>
+          <li>
+            <span>03</span>
+            <div>
+              <strong>Approve what ships</strong>
+              <p>The queue holds every publish. Kill switch if you need the room quiet.</p>
+            </div>
+          </li>
+          <li>
+            <span>04</span>
+            <div>
+              <strong>Hand features to product</strong>
+              <p>Task console is a different login. Engineering closes the loop on a real board.</p>
+            </div>
+          </li>
         </ol>
       </section>
 
       <section className="lp-cta">
-        <Reveal>
-          <h2 className="lp-h2">The board is the product.</h2>
-          <p className="lp-lede">
-            Start in God Mode for marketing. Open the Task console when features need owners.
-          </p>
-          <div className="lp-hero-actions">
-            <Link href={consoleHref} className="btn-primary lp-btn">
-              Enter God Mode
-            </Link>
-            <Link href="/pm/login" className="lp-btn-ghost">
-              Task console login
-            </Link>
-          </div>
-        </Reveal>
+        <h2>Sign in and brief the CMO.</h2>
+        <p>God Mode for marketing. Task console when a feature needs an owner.</p>
+        <div className="lp-hero-actions">
+          <Link href={consoleHref} className="lp-btn-light">
+            Open God Mode
+          </Link>
+          <Link href="/pm/login" className="lp-text-btn is-light">
+            Task console
+          </Link>
+        </div>
       </section>
 
       <footer className="lp-foot">
         <span>
-          {appName} · agents work · you decide
+          {appName}
         </span>
         <nav>
           <Link href="/login">God Mode</Link>
-          <Link href="/pm/login">Tasks</Link>
+          <Link href="/pm/login">Task console</Link>
           <Link href="/docs">API</Link>
         </nav>
       </footer>
