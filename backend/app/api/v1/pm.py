@@ -1,7 +1,9 @@
+import secrets
+from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -18,6 +20,7 @@ from app.models.pm import (
     PmProject,
     PmUser,
     PmWorkspace,
+    PmWorkspaceMember,
 )
 from app.schemas.common import TokenOut
 from app.schemas.pm import (
@@ -31,15 +34,19 @@ from app.schemas.pm import (
     PmIssueIn,
     PmIssueOut,
     PmIssueUpdate,
+    PmCommentUpdate,
     PmLoginIn,
     PmMemberIn,
+    PmMemberUpdate,
     PmProjectIn,
     PmProjectOut,
     PmProjectUpdate,
     PmRegisterIn,
+    PmReportOut,
     PmUserOut,
     PmWorkspaceIn,
     PmWorkspaceOut,
+    PmWorkspaceUpdate,
 )
 from app.services.pm import (
     add_member,
@@ -56,7 +63,9 @@ from app.services.pm import (
     get_project_for_user,
     join_default_workspace,
     membership,
+    project_report,
     require_god,
+    touch_presence,
     user_workspaces,
 )
 from app.services.pm_godmode import list_messages, reply, serialize_message
@@ -92,7 +101,14 @@ def login(payload: PmLoginIn, db: Session = Depends(get_db)) -> TokenOut:
     user = db.scalar(select(PmUser).where(PmUser.email == payload.email.lower().strip()))
     if user is None or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    touch_presence(db, user)
     return TokenOut(access_token=create_access_token(user.id, audience="pm"))
+
+
+@router.post("/auth/heartbeat")
+def heartbeat(user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)) -> dict:
+    touch_presence(db, user)
+    return {"ok": True, "last_seen_at": user.last_seen_at}
 
 
 @router.get("/auth/me", response_model=PmUserOut)
@@ -146,13 +162,88 @@ def invite_member(
     require_god(member)
     if payload.role not in MEMBER_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
-    invited = db.scalar(select(PmUser).where(PmUser.email == payload.email.lower().strip()))
+    email = payload.email.lower().strip()
+    invited = db.scalar(select(PmUser).where(PmUser.email == email))
+    temporary_password = None
     if invited is None:
-        raise HTTPException(status_code=404, detail="That person must register on the task console first")
+        temporary_password = payload.password.strip() or secrets.token_urlsafe(8)
+        invited = PmUser(
+            email=email,
+            hashed_password=hash_password(temporary_password),
+            display_name=(payload.display_name or email.split("@")[0]).strip(),
+        )
+        db.add(invited)
+        db.flush()
     workspace = db.get(PmWorkspace, workspace_id)
     added = add_member(db, workspace, invited, payload.role)
     db.commit()
-    return decorate_member(db, added)
+    out = decorate_member(db, added)
+    out["temporary_password"] = temporary_password
+    return out
+
+
+@router.patch("/workspaces/{workspace_id}", response_model=PmWorkspaceOut)
+def patch_workspace(
+    workspace_id: UUID,
+    payload: PmWorkspaceUpdate,
+    user: PmUser = Depends(get_pm_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    member = membership(db, workspace_id, user.id)
+    require_god(member)
+    workspace = db.get(PmWorkspace, workspace_id)
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+    if payload.name:
+        workspace.name = payload.name.strip()
+    db.commit()
+    db.refresh(workspace)
+    return decorate_workspace(db, workspace, member.role)
+
+
+@router.patch("/workspaces/{workspace_id}/members/{member_id}")
+def patch_member(
+    workspace_id: UUID,
+    member_id: UUID,
+    payload: PmMemberUpdate,
+    user: PmUser = Depends(get_pm_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    actor = membership(db, workspace_id, user.id)
+    require_god(actor)
+    row = db.get(PmWorkspaceMember, member_id)
+    if row is None or row.workspace_id != workspace_id:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if payload.role:
+        if payload.role not in MEMBER_ROLES:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        row.role = payload.role
+    if payload.display_name is not None:
+        target = db.get(PmUser, row.user_id)
+        if target:
+            target.display_name = payload.display_name.strip()
+    db.commit()
+    db.refresh(row)
+    return decorate_member(db, row)
+
+
+@router.delete("/workspaces/{workspace_id}/members/{member_id}")
+def delete_member(
+    workspace_id: UUID,
+    member_id: UUID,
+    user: PmUser = Depends(get_pm_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    actor = membership(db, workspace_id, user.id)
+    require_god(actor)
+    row = db.get(PmWorkspaceMember, member_id)
+    if row is None or row.workspace_id != workspace_id:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if row.user_id == user.id:
+        raise HTTPException(status_code=400, detail="You cannot remove yourself")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/workspaces/{workspace_id}/projects", response_model=list[PmProjectOut])
@@ -201,6 +292,36 @@ def patch_project(
     db.commit()
     db.refresh(project)
     return decorate_project(db, project)
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(
+    project_id: UUID, user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)
+) -> dict:
+    project, member = get_project_for_user(db, project_id, user.id)
+    require_god(member)
+    issues = list(db.scalars(select(PmIssue).where(PmIssue.project_id == project.id)))
+    for issue in issues:
+        for comment in db.scalars(select(PmComment).where(PmComment.issue_id == issue.id)):
+            db.delete(comment)
+    for issue in issues:
+        issue.parent_id = None
+    db.flush()
+    for issue in issues:
+        db.delete(issue)
+    for feature in db.scalars(select(PmFeature).where(PmFeature.project_id == project.id)):
+        db.delete(feature)
+    db.delete(project)
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/projects/{project_id}/report", response_model=PmReportOut)
+def get_report(
+    project_id: UUID, user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)
+) -> dict:
+    project, _ = get_project_for_user(db, project_id, user.id)
+    return project_report(db, project)
 
 
 @router.get("/projects/{project_id}/board", response_model=PmBoardOut)
@@ -277,18 +398,42 @@ def patch_feature(
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] not in FEATURE_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
-    if "title" in data or "description" in data:
-        require_god(member)
     _apply(feature, data)
     db.commit()
     db.refresh(feature)
     return decorate_feature(db, feature, project)
 
 
+@router.delete("/features/{feature_id}")
+def delete_feature(
+    feature_id: UUID, user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)
+) -> dict:
+    feature = db.get(PmFeature, feature_id)
+    if feature is None:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    _, member = get_project_for_user(db, feature.project_id, user.id)
+    require_god(member)
+    for issue in db.scalars(select(PmIssue).where(PmIssue.feature_id == feature.id)):
+        issue.feature_id = None
+    db.delete(feature)
+    db.commit()
+    return {"ok": True}
+
+
 @router.get("/projects/{project_id}/issues", response_model=list[PmIssueOut])
 def list_issues(
     project_id: UUID,
     feature_id: UUID | None = Query(default=None),
+    parent_id: UUID | None = Query(default=None),
+    q: str = Query(""),
+    status: str = Query(""),
+    kind: str = Query(""),
+    priority: int | None = Query(default=None),
+    assignee_id: UUID | None = Query(default=None),
+    unassigned: bool = Query(False),
+    overdue: bool = Query(False),
+    due_before: date | None = Query(default=None),
+    due_after: date | None = Query(default=None),
     user: PmUser = Depends(get_pm_user),
     db: Session = Depends(get_db),
 ) -> list[dict]:
@@ -296,8 +441,30 @@ def list_issues(
     stmt = select(PmIssue).where(PmIssue.project_id == project.id)
     if feature_id:
         stmt = stmt.where(PmIssue.feature_id == feature_id)
+    if parent_id:
+        stmt = stmt.where(PmIssue.parent_id == parent_id)
+    if q.strip():
+        needle = f"%{q.strip()}%"
+        stmt = stmt.where(or_(PmIssue.title.ilike(needle), PmIssue.description.ilike(needle)))
+    if status.strip() and status != "all":
+        stmt = stmt.where(PmIssue.status == status)
+    if kind.strip() and kind != "all":
+        stmt = stmt.where(PmIssue.kind == kind)
+    if priority is not None:
+        stmt = stmt.where(PmIssue.priority == priority)
+    if unassigned:
+        stmt = stmt.where(PmIssue.assignee_id.is_(None))
+    elif assignee_id:
+        stmt = stmt.where(PmIssue.assignee_id == assignee_id)
+    if due_before:
+        stmt = stmt.where(PmIssue.due_date <= due_before)
+    if due_after:
+        stmt = stmt.where(PmIssue.due_date >= due_after)
     rows = db.scalars(stmt.order_by(PmIssue.sort_order, PmIssue.number)).all()
-    return [decorate_issue(db, row, project) for row in rows]
+    out = [decorate_issue(db, row, project) for row in rows]
+    if overdue:
+        out = [row for row in out if row["overdue"]]
+    return out
 
 
 @router.post("/projects/{project_id}/issues", response_model=PmIssueOut)
@@ -317,6 +484,7 @@ def post_issue(
         status=payload.status,
         priority=payload.priority,
         feature_id=payload.feature_id,
+        parent_id=payload.parent_id,
         assignee_id=payload.assignee_id,
         reporter_id=user.id,
         due_date=payload.due_date,
@@ -359,6 +527,25 @@ def patch_issue(
     db.commit()
     db.refresh(issue)
     return decorate_issue(db, issue, project)
+
+
+@router.delete("/issues/{issue_id}")
+def delete_issue(
+    issue_id: UUID, user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)
+) -> dict:
+    issue = db.get(PmIssue, issue_id)
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    get_project_for_user(db, issue.project_id, user.id)
+    for child in db.scalars(select(PmIssue).where(PmIssue.parent_id == issue.id)):
+        for comment in db.scalars(select(PmComment).where(PmComment.issue_id == child.id)):
+            db.delete(comment)
+        db.delete(child)
+    for comment in db.scalars(select(PmComment).where(PmComment.issue_id == issue.id)):
+        db.delete(comment)
+    db.delete(issue)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/issues/{issue_id}/comments", response_model=list[PmCommentOut])
@@ -410,6 +597,51 @@ def post_comment(
         "body": row.body,
         "created_at": row.created_at,
     }
+
+
+@router.patch("/comments/{comment_id}", response_model=PmCommentOut)
+def patch_comment(
+    comment_id: UUID,
+    payload: PmCommentUpdate,
+    user: PmUser = Depends(get_pm_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    row = db.get(PmComment, comment_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    issue = db.get(PmIssue, row.issue_id)
+    get_project_for_user(db, issue.project_id, user.id)
+    if row.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your comments")
+    if not payload.body.strip():
+        raise HTTPException(status_code=400, detail="Comment is empty")
+    row.body = payload.body.strip()
+    db.commit()
+    db.refresh(row)
+    return {
+        "id": row.id,
+        "issue_id": row.issue_id,
+        "user_id": row.user_id,
+        "author_name": display_of(user),
+        "body": row.body,
+        "created_at": row.created_at,
+    }
+
+
+@router.delete("/comments/{comment_id}")
+def delete_comment(
+    comment_id: UUID, user: PmUser = Depends(get_pm_user), db: Session = Depends(get_db)
+) -> dict:
+    row = db.get(PmComment, comment_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    issue = db.get(PmIssue, row.issue_id)
+    _, member = get_project_for_user(db, issue.project_id, user.id)
+    if row.user_id != user.id and member.role not in {"owner", "admin"}:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/workspaces/{workspace_id}/godmode/messages")

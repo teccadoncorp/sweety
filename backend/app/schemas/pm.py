@@ -41,6 +41,13 @@ class PmWorkspaceIn(BaseModel):
 class PmMemberIn(BaseModel):
     email: str
     role: str = "member"
+    display_name: str = ""
+    password: str = ""
+
+
+class PmMemberUpdate(BaseModel):
+    role: str | None = None
+    display_name: str | None = None
 
 
 class PmMemberOut(ORMModel):
@@ -49,7 +56,10 @@ class PmMemberOut(ORMModel):
     email: str
     display_name: str
     role: str
+    online: bool = False
+    last_seen_at: datetime | None = None
     created_at: datetime
+    temporary_password: str | None = None
 
 
 class PmWorkspaceOut(ORMModel):
@@ -120,6 +130,7 @@ class PmIssueIn(BaseModel):
     status: str = "backlog"
     priority: int = 2
     feature_id: UUID | None = None
+    parent_id: UUID | None = None
     assignee_id: UUID | None = None
     due_date: date | None = None
 
@@ -131,6 +142,7 @@ class PmIssueUpdate(BaseModel):
     status: str | None = None
     priority: int | None = None
     feature_id: UUID | None = None
+    parent_id: UUID | None = None
     assignee_id: UUID | None = None
     due_date: date | None = None
     sort_order: int | None = None
@@ -140,6 +152,9 @@ class PmIssueOut(ORMModel):
     id: UUID
     project_id: UUID
     feature_id: UUID | None
+    parent_id: UUID | None = None
+    parent_key: str = ""
+    subticket_count: int = 0
     key: str
     number: int
     title: str
@@ -154,6 +169,7 @@ class PmIssueOut(ORMModel):
     feature_title: str = ""
     feature_key: str = ""
     due_date: date | None
+    overdue: bool = False
     sort_order: int
     created_at: datetime
     updated_at: datetime
@@ -183,3 +199,20 @@ class PmBoardOut(BaseModel):
 
 class PmChatIn(BaseModel):
     content: str
+
+
+class PmWorkspaceUpdate(BaseModel):
+    name: str | None = None
+
+
+class PmCommentUpdate(BaseModel):
+    body: str
+
+
+class PmReportOut(BaseModel):
+    totals: dict
+    by_status: dict[str, int]
+    by_kind: dict[str, int]
+    by_assignee: list[dict]
+    by_epic: list[dict]
+    overdue: list[PmIssueOut]

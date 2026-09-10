@@ -12,7 +12,7 @@ GOD_ROLES = frozenset({"owner", "admin"})
 MEMBER_ROLES = frozenset({"owner", "admin", "member"})
 ISSUE_STATUSES = ("backlog", "todo", "in_progress", "review", "done")
 FEATURE_STATUSES = ("backlog", "planned", "in_progress", "done")
-ISSUE_KINDS = ("story", "task", "bug")
+ISSUE_KINDS = ("epic", "story", "ticket", "task", "bug", "subticket")
 
 
 class PmUser(Base):
@@ -23,6 +23,7 @@ class PmUser(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     display_name: Mapped[str] = mapped_column(String(120), default="")
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     memberships = relationship("PmWorkspaceMember", back_populates="user")
@@ -122,6 +123,9 @@ class PmIssue(Base):
     feature_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("pm.features.id"), nullable=True, index=True
     )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pm.issues.id"), nullable=True, index=True
+    )
     number: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(300))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -146,6 +150,8 @@ class PmIssue(Base):
     assignee = relationship("PmUser", foreign_keys=[assignee_id])
     reporter = relationship("PmUser", foreign_keys=[reporter_id])
     comments = relationship("PmComment", back_populates="issue", cascade="all, delete-orphan")
+    parent = relationship("PmIssue", remote_side="PmIssue.id", back_populates="children")
+    children = relationship("PmIssue", back_populates="parent")
 
 
 class PmComment(Base):

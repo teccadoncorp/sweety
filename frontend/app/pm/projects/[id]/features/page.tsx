@@ -41,8 +41,12 @@ export default function PmFeaturesPage() {
   });
 
   const update = useMutation({
-    mutationFn: ({ featureId, status }: { featureId: string; status: string }) =>
-      pmApi(`/features/${featureId}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    mutationFn: ({ featureId, body }: { featureId: string; body: Record<string, unknown> }) =>
+      pmApi(`/features/${featureId}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pm-board", id] }),
+  });
+  const remove = useMutation({
+    mutationFn: (featureId: string) => pmApi(`/features/${featureId}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pm-board", id] }),
   });
 
@@ -100,14 +104,20 @@ export default function PmFeaturesPage() {
                 <p className="text-xs text-clay">
                   {f.key} · {pmPill(f.source)}
                 </p>
-                <h2 className="mt-1 font-serif text-2xl">{f.title}</h2>
+                <input
+                  className="field mt-1 font-serif text-2xl"
+                  defaultValue={f.title}
+                  onBlur={(e) => {
+                    if (e.target.value !== f.title) update.mutate({ featureId: f.id, body: { title: e.target.value } });
+                  }}
+                />
               </div>
               <div className="flex items-center gap-2">
                 {pmPill(f.status)}
                 <select
                   className="field w-auto"
                   value={f.status}
-                  onChange={(e) => update.mutate({ featureId: f.id, status: e.target.value })}
+                  onChange={(e) => update.mutate({ featureId: f.id, body: { status: e.target.value } })}
                 >
                   {FEATURE_STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -117,8 +127,25 @@ export default function PmFeaturesPage() {
                 </select>
               </div>
             </div>
-            {f.description && <p className="mt-2 text-sm text-clay">{f.description}</p>}
-            <p className="mt-3 text-xs text-clay">{f.issue_count} issues on the board</p>
+            <textarea
+              className="field mt-2 text-sm"
+              defaultValue={f.description}
+              onBlur={(e) => {
+                if (e.target.value !== f.description) update.mutate({ featureId: f.id, body: { description: e.target.value } });
+              }}
+            />
+            <div className="mt-3 flex items-center justify-between text-xs text-clay">
+              <span>{f.issue_count} issues on the board</span>
+              {board?.can_create_features && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete ${f.key}?`)) remove.mutate(f.id);
+                  }}
+                >
+                  Delete epic
+                </button>
+              )}
+            </div>
           </article>
         ))}
       </div>

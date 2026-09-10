@@ -107,6 +107,7 @@ class CrmDeal(Base):
     account = relationship("CrmAccount", back_populates="deals")
     contact = relationship("CrmContact", back_populates="deals")
     activities = relationship("CrmActivity", back_populates="deal")
+    line_items = relationship("CrmLineItem", back_populates="deal", cascade="all, delete-orphan")
 
 
 class CrmActivity(Base):
@@ -132,3 +133,22 @@ class CrmActivity(Base):
 
     contact = relationship("CrmContact", back_populates="activities")
     deal = relationship("CrmDeal", back_populates="activities")
+
+
+class CrmLineItem(Base):
+    __tablename__ = "crm_line_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    brand_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("brands.id"), index=True)
+    deal_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("crm_deals.id"), index=True)
+    name: Mapped[str] = mapped_column(String(240))
+    sku: Mapped[str] = mapped_column(String(80), default="")
+    qty: Mapped[int] = mapped_column(Integer, default=1)
+    unit_price_usd: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    deal = relationship("CrmDeal", back_populates="line_items")

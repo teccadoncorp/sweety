@@ -14,13 +14,14 @@ import {
   CrmBoard,
   CrmContact,
   CrmDeal,
+  CrmLineItem,
 } from "@/lib/api";
 
 const STAGES = ["signal", "qualify", "propose", "commit", "won", "lost"] as const;
 const TEMPS = ["all", "ice", "cool", "warm", "hot", "star"] as const;
 const KINDS = ["note", "call", "email", "meeting", "task"];
 
-type Tab = "pipeline" | "contacts" | "accounts" | "activity" | "ai";
+type Tab = "pipeline" | "contacts" | "accounts" | "cart" | "activity" | "ai";
 
 function fmtDate(value?: string | null) {
   if (!value) return "—";
@@ -33,7 +34,7 @@ export function CrmApp({ brandId }: { brandId: string }) {
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "pipeline";
     const t = new URLSearchParams(window.location.search).get("tab");
-    return t === "contacts" || t === "accounts" || t === "activity" || t === "ai" ? t : "pipeline";
+    return t === "contacts" || t === "accounts" || t === "cart" || t === "activity" || t === "ai" ? t : "pipeline";
   });
   const [q, setQ] = useState("");
   const [temp, setTemp] = useState(() => {
@@ -42,7 +43,7 @@ export function CrmApp({ brandId }: { brandId: string }) {
   });
   const [dealId, setDealId] = useState<string | null>(null);
   const [contactId, setContactId] = useState<string | null>(null);
-  const [dealForm, setDealForm] = useState({ name: "", value: "5000", stage: "signal", contact_id: "" });
+  const [dealForm, setDealForm] = useState({ name: "", value: "5000", stage: "signal", contact_id: "", account_id: "", close_date: "" });
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",
@@ -50,8 +51,12 @@ export function CrmApp({ brandId }: { brandId: string }) {
     title: "",
     company: "",
     next_action: "",
+    account_id: "",
   });
-  const [accountForm, setAccountForm] = useState({ name: "", domain: "", industry: "" });
+  const [accountForm, setAccountForm] = useState({ name: "", domain: "", industry: "", size: "", website: "", notes: "" });
+  const [editAccountId, setEditAccountId] = useState<string | null>(null);
+  const [cartForm, setCartForm] = useState({ deal_id: "", name: "", sku: "", qty: "1", unit_price_usd: "0", notes: "" });
+  const [activityDue, setActivityDue] = useState("");
   const [note, setNote] = useState("");
   const [kind, setKind] = useState("note");
   const [lostReason, setLostReason] = useState("");
@@ -83,6 +88,13 @@ export function CrmApp({ brandId }: { brandId: string }) {
     queryKey: ["agents", brandId],
     queryFn: () => api<Agent[]>(`/brands/${brandId}/agents`),
   });
+  const { data: cart = [] } = useQuery({
+    queryKey: ["crm-cart", brandId, dealId, tab],
+    queryFn: () => {
+      const qs = tab === "cart" || !dealId ? "" : `?deal_id=${dealId}`;
+      return api<CrmLineItem[]>(`/brands/${brandId}/crm/cart${qs}`);
+    },
+  });
   const { data: overdue = [] } = useQuery({
     queryKey: ["crm-overdue", brandId],
     queryFn: () => api<CrmContact[]>(`/brands/${brandId}/crm/overdue`),
@@ -107,6 +119,7 @@ export function CrmApp({ brandId }: { brandId: string }) {
     qc.invalidateQueries({ queryKey: ["crm-accounts", brandId] });
     qc.invalidateQueries({ queryKey: ["crm-activities", brandId] });
     qc.invalidateQueries({ queryKey: ["crm-overdue", brandId] });
+    qc.invalidateQueries({ queryKey: ["crm-cart", brandId] });
   };
 
   const seed = useMutation({
@@ -117,21 +130,66 @@ export function CrmApp({ brandId }: { brandId: string }) {
     mutationFn: () =>
       api<CrmContact>(`/brands/${brandId}/crm/contacts`, {
         method: "POST",
-        body: JSON.stringify({ ...contactForm, source: "manual", temperature: "warm", signal_score: 55 }),
+        body: JSON.stringify({
+          ...contactForm,
+          account_id: contactForm.account_id || null,
+          source: "manual",
+          temperature: "warm",
+          signal_score: 55,
+        }),
       }),
     onSuccess: (row) => {
-      setContactForm({ name: "", email: "", phone: "", title: "", company: "", next_action: "" });
+      setContactForm({ name: "", email: "", phone: "", title: "", company: "", next_action: "", account_id: "" });
       setContactId(row.id);
       refresh();
     },
   });
   const addAccount = useMutation({
     mutationFn: () =>
-      api(`/brands/${brandId}/crm/accounts`, { method: "POST", body: JSON.stringify(accountForm) }),
+      editAccountId
+        ? api(`/brands/${brandId}/crm/accounts/${editAccountId}`, { method: "PATCH", body: JSON.stringify(accountForm) })
+        : api(`/brands/${brandId}/crm/accounts`, { method: "POST", body: JSON.stringify(accountForm) }),
     onSuccess: () => {
-      setAccountForm({ name: "", domain: "", industry: "" });
+      setAccountForm({ name: "", domain: "", industry: "", size: "", website: "", notes: "" });
+      setEditAccountId(null);
       refresh();
     },
+  });
+  const saveCart = useMutation({
+    mutationFn: () =>
+      api<CrmLineItem>(`/brands/${brandId}/crm/cart`, {
+        method: "POST",
+        body: JSON.stringify({
+          deal_id: cartForm.deal_id || dealId,
+          name: cartForm.name,
+          sku: cartForm.sku,
+          qty: Number(cartForm.qty) || 1,
+          unit_price_usd: cartForm.unit_price_usd,
+          notes: cartForm.notes,
+        }),
+      }),
+    onSuccess: () => {
+      setCartForm({ deal_id: cartForm.deal_id, name: "", sku: "", qty: "1", unit_price_usd: "0", notes: "" });
+      refresh();
+    },
+  });
+  const patchCart = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+      api(`/brands/${brandId}/crm/cart/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: refresh,
+  });
+  const removeCart = useMutation({
+    mutationFn: (id: string) => api(`/brands/${brandId}/crm/cart/${id}`, { method: "DELETE" }),
+    onSuccess: refresh,
+  });
+  const patchActivity = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+      api(`/brands/${brandId}/crm/activities/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: refresh,
+  });
+  const removeActivity = useMutation({
+    mutationFn: (id: string) => api(`/brands/${brandId}/crm/activities/${id}`, { method: "DELETE" }),
+    onSuccess: refresh,
   });
   const addDeal = useMutation({
     mutationFn: () =>
@@ -142,10 +200,12 @@ export function CrmApp({ brandId }: { brandId: string }) {
           value_usd: dealForm.value,
           stage: dealForm.stage,
           contact_id: dealForm.contact_id || contactId || null,
+          account_id: dealForm.account_id || null,
+          close_date: dealForm.close_date,
         }),
       }),
     onSuccess: (row) => {
-      setDealForm({ name: "", value: "5000", stage: "signal", contact_id: "" });
+      setDealForm({ name: "", value: "5000", stage: "signal", contact_id: "", account_id: "", close_date: "" });
       setDealId(row.id);
       refresh();
     },
@@ -179,10 +239,12 @@ export function CrmApp({ brandId }: { brandId: string }) {
           body: note,
           contact_id: contactId,
           deal_id: dealId,
+          due_at: activityDue || null,
         }),
       }),
     onSuccess: () => {
       setNote("");
+      setActivityDue("");
       refresh();
     },
   });
@@ -296,7 +358,7 @@ export function CrmApp({ brandId }: { brandId: string }) {
             ))}
           </section>
           <nav className="mt-5 flex flex-wrap gap-1">
-            {(["pipeline", "contacts", "accounts", "activity", "ai"] as Tab[]).map((item) => (
+            {(["pipeline", "contacts", "accounts", "cart", "activity", "ai"] as Tab[]).map((item) => (
               <button
                 key={item}
                 className={`rounded-lg px-3 py-1.5 text-sm capitalize ${
@@ -355,6 +417,24 @@ export function CrmApp({ brandId }: { brandId: string }) {
                     </option>
                   ))}
                 </select>
+                <select
+                  className="field w-48"
+                  value={dealForm.account_id}
+                  onChange={(e) => setDealForm({ ...dealForm, account_id: e.target.value })}
+                >
+                  <option value="">Account (optional)</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className="field w-40"
+                  type="date"
+                  value={dealForm.close_date}
+                  onChange={(e) => setDealForm({ ...dealForm, close_date: e.target.value })}
+                />
                 <button className="btn-primary" type="submit">
                   Create deal
                 </button>
@@ -431,6 +511,18 @@ export function CrmApp({ brandId }: { brandId: string }) {
                     onChange={(e) => setContactForm({ ...contactForm, [key]: e.target.value })}
                   />
                 ))}
+                <select
+                  className="field"
+                  value={contactForm.account_id}
+                  onChange={(e) => setContactForm({ ...contactForm, account_id: e.target.value })}
+                >
+                  <option value="">Account (optional)</option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
                 <button className="btn-primary w-full" type="submit">
                   Add contact
                 </button>
@@ -490,27 +582,60 @@ export function CrmApp({ brandId }: { brandId: string }) {
                   if (accountForm.name.trim()) addAccount.mutate();
                 }}
               >
-                <h2 className="font-semibold">New account</h2>
+                <h2 className="font-semibold">{editAccountId ? "Edit account" : "New account"}</h2>
                 <input className="field" placeholder="Name" value={accountForm.name} onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })} />
                 <input className="field" placeholder="Domain" value={accountForm.domain} onChange={(e) => setAccountForm({ ...accountForm, domain: e.target.value })} />
                 <input className="field" placeholder="Industry" value={accountForm.industry} onChange={(e) => setAccountForm({ ...accountForm, industry: e.target.value })} />
+                <input className="field" placeholder="Size" value={accountForm.size} onChange={(e) => setAccountForm({ ...accountForm, size: e.target.value })} />
+                <input className="field" placeholder="Website" value={accountForm.website} onChange={(e) => setAccountForm({ ...accountForm, website: e.target.value })} />
+                <textarea className="field" placeholder="Notes" value={accountForm.notes} onChange={(e) => setAccountForm({ ...accountForm, notes: e.target.value })} />
                 <button className="btn-primary w-full" type="submit">
-                  Add account
+                  {editAccountId ? "Save account" : "Add account"}
                 </button>
+                {editAccountId && (
+                  <button
+                    type="button"
+                    className="btn-ghost w-full"
+                    onClick={() => {
+                      setEditAccountId(null);
+                      setAccountForm({ name: "", domain: "", industry: "", size: "", website: "", notes: "" });
+                    }}
+                  >
+                    Cancel edit
+                  </button>
+                )}
               </form>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {accounts.map((a) => (
                   <article key={a.id} className="card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold">{a.name}</h3>
-                      <button
-                        className="text-xs text-clay"
-                        onClick={() => {
-                          if (confirm(`Delete ${a.name}?`)) remove.mutate({ kind: "accounts", id: a.id });
-                        }}
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          className="text-xs text-violet"
+                          onClick={() => {
+                            setEditAccountId(a.id);
+                            setAccountForm({
+                              name: a.name,
+                              domain: a.domain,
+                              industry: a.industry,
+                              size: a.size || "",
+                              website: a.website || "",
+                              notes: a.notes || "",
+                            });
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-xs text-clay"
+                          onClick={() => {
+                            if (confirm(`Delete ${a.name}?`)) remove.mutate({ kind: "accounts", id: a.id });
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-1 text-xs text-clay">{a.industry || a.domain || "—"}</p>
                     <p className="mt-2 text-sm text-violet">Signal {a.signal_score}</p>
@@ -522,16 +647,121 @@ export function CrmApp({ brandId }: { brandId: string }) {
             </div>
           )}
 
+          {tab === "cart" && (
+            <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+              <form
+                className="card h-fit space-y-2 p-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (cartForm.name.trim() && (cartForm.deal_id || dealId)) saveCart.mutate();
+                }}
+              >
+                <h2 className="font-semibold">Add cart line</h2>
+                <select
+                  className="field"
+                  value={cartForm.deal_id || dealId || ""}
+                  onChange={(e) => setCartForm({ ...cartForm, deal_id: e.target.value })}
+                >
+                  <option value="">Deal</option>
+                  {deals.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+                <input className="field" placeholder="Item name" value={cartForm.name} onChange={(e) => setCartForm({ ...cartForm, name: e.target.value })} />
+                <input className="field" placeholder="SKU" value={cartForm.sku} onChange={(e) => setCartForm({ ...cartForm, sku: e.target.value })} />
+                <input className="field" placeholder="Qty" value={cartForm.qty} onChange={(e) => setCartForm({ ...cartForm, qty: e.target.value })} />
+                <input className="field" placeholder="Unit price" value={cartForm.unit_price_usd} onChange={(e) => setCartForm({ ...cartForm, unit_price_usd: e.target.value })} />
+                <textarea className="field" placeholder="Notes" value={cartForm.notes} onChange={(e) => setCartForm({ ...cartForm, notes: e.target.value })} />
+                <button className="btn-primary w-full" type="submit">
+                  Add to cart
+                </button>
+              </form>
+              <div className="overflow-x-auto rounded-xl border border-line bg-white">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-line text-xs uppercase text-clay">
+                    <tr>
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2">Deal</th>
+                      <th className="px-3 py-2">Qty</th>
+                      <th className="px-3 py-2">Price</th>
+                      <th className="px-3 py-2">Total</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((item) => (
+                      <tr key={item.id} className="border-b border-line last:border-0">
+                        <td className="px-3 py-2">
+                          <input
+                            className="field"
+                            defaultValue={item.name}
+                            onBlur={(e) => {
+                              if (e.target.value !== item.name) patchCart.mutate({ id: item.id, body: { name: e.target.value } });
+                            }}
+                          />
+                          <div className="mt-1 text-xs text-clay">{item.sku || "No SKU"}</div>
+                        </td>
+                        <td className="px-3 py-2 text-clay">{item.deal_name || "—"}</td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="field w-16"
+                            defaultValue={item.qty}
+                            onBlur={(e) => patchCart.mutate({ id: item.id, body: { qty: Number(e.target.value) || 1 } })}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="field w-24"
+                            defaultValue={item.unit_price_usd}
+                            onBlur={(e) => patchCart.mutate({ id: item.id, body: { unit_price_usd: e.target.value } })}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-violet">
+                          {money((parseFloat(item.unit_price_usd) || 0) * item.qty)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <button className="text-xs text-clay" onClick={() => removeCart.mutate(item.id)}>
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {cart.length === 0 && <p className="p-6 text-sm text-clay">Cart is empty. Add line items to a deal.</p>}
+              </div>
+            </div>
+          )}
+
           {tab === "activity" && (
             <div className="mx-auto max-w-3xl space-y-3">
               {activities.map((a) => (
                 <div key={a.id} className="card p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-medium">{a.title}</div>
-                    {pill(a.kind)}
+                    <input
+                      className="field max-w-sm font-medium"
+                      defaultValue={a.title}
+                      onBlur={(e) => {
+                        if (e.target.value !== a.title) patchActivity.mutate({ id: a.id, body: { title: e.target.value } });
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      {pill(a.kind)}
+                      <button className="text-xs text-clay" onClick={() => removeActivity.mutate(a.id)}>
+                        Delete
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-1 text-xs text-clay">{fmtDate(a.created_at)}</div>
-                  <p className="mt-2 text-sm text-ink/80">{a.body}</p>
+                  <textarea
+                    className="field mt-2 min-h-16 text-sm"
+                    defaultValue={a.body}
+                    onBlur={(e) => {
+                      if (e.target.value !== a.body) patchActivity.mutate({ id: a.id, body: { body: e.target.value } });
+                    }}
+                  />
                 </div>
               ))}
               {activities.length === 0 && <p className="text-sm text-clay">No activity yet.</p>}
@@ -592,6 +822,16 @@ export function CrmApp({ brandId }: { brandId: string }) {
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
             {deal && (
               <>
+                <label className="text-xs text-clay">
+                  Name
+                  <input
+                    className="field mt-1"
+                    defaultValue={deal.name}
+                    onBlur={(e) => {
+                      if (e.target.value !== deal.name) patchDeal.mutate({ id: deal.id, body: { name: e.target.value } });
+                    }}
+                  />
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="text-xs text-clay">
                     Value
@@ -611,6 +851,36 @@ export function CrmApp({ brandId }: { brandId: string }) {
                     />
                   </label>
                 </div>
+                <label className="text-xs text-clay">
+                  Account
+                  <select
+                    className="field mt-1"
+                    value={deal.account_id || ""}
+                    onChange={(e) => patchDeal.mutate({ id: deal.id, body: { account_id: e.target.value || null } })}
+                  >
+                    <option value="">None</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs text-clay">
+                  Contact
+                  <select
+                    className="field mt-1"
+                    value={deal.contact_id || ""}
+                    onChange={(e) => patchDeal.mutate({ id: deal.id, body: { contact_id: e.target.value || null } })}
+                  >
+                    <option value="">None</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="text-xs text-clay">
                   Stage
                   <select
@@ -646,6 +916,22 @@ export function CrmApp({ brandId }: { brandId: string }) {
                     </ul>
                   </div>
                 )}
+                <div className="rounded-lg border border-line p-3">
+                  <div className="text-xs uppercase tracking-wide text-clay">Deal cart</div>
+                  <div className="mt-2 space-y-2">
+                    {cart.filter((i) => i.deal_id === deal.id).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                        <span>
+                          {item.qty}× {item.name}
+                        </span>
+                        <span className="text-violet">{money((parseFloat(item.unit_price_usd) || 0) * item.qty)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="btn-ghost mt-2 w-full text-xs" onClick={() => { setCartForm({ ...cartForm, deal_id: deal.id }); setTab("cart"); }}>
+                    Edit cart
+                  </button>
+                </div>
                 <button
                   className="btn-ghost w-full text-violet"
                   onClick={() => {
@@ -658,6 +944,41 @@ export function CrmApp({ brandId }: { brandId: string }) {
             )}
             {person && (
               <>
+                <label className="text-xs text-clay">
+                  Name
+                  <input className="field mt-1" defaultValue={person.name} onBlur={(e) => patchContact.mutate({ id: person.id, body: { name: e.target.value } })} />
+                </label>
+                <label className="text-xs text-clay">
+                  Email
+                  <input className="field mt-1" defaultValue={person.email} onBlur={(e) => patchContact.mutate({ id: person.id, body: { email: e.target.value } })} />
+                </label>
+                <label className="text-xs text-clay">
+                  Phone
+                  <input className="field mt-1" defaultValue={person.phone} onBlur={(e) => patchContact.mutate({ id: person.id, body: { phone: e.target.value } })} />
+                </label>
+                <label className="text-xs text-clay">
+                  Title
+                  <input className="field mt-1" defaultValue={person.title} onBlur={(e) => patchContact.mutate({ id: person.id, body: { title: e.target.value } })} />
+                </label>
+                <label className="text-xs text-clay">
+                  Company
+                  <input className="field mt-1" defaultValue={person.company} onBlur={(e) => patchContact.mutate({ id: person.id, body: { company: e.target.value } })} />
+                </label>
+                <label className="text-xs text-clay">
+                  Account
+                  <select
+                    className="field mt-1"
+                    value={person.account_id || ""}
+                    onChange={(e) => patchContact.mutate({ id: person.id, body: { account_id: e.target.value || null } })}
+                  >
+                    <option value="">None</option>
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <div className="text-sm text-clay">
                   {person.title} {person.company ? `· ${person.company}` : ""}
                 </div>
@@ -722,6 +1043,7 @@ export function CrmApp({ brandId }: { brandId: string }) {
                   ))}
                 </select>
                 <textarea className="field min-h-16" placeholder="What happened?" value={note} onChange={(e) => setNote(e.target.value)} />
+                <input className="field" type="datetime-local" value={activityDue} onChange={(e) => setActivityDue(e.target.value)} />
                 <button className="btn-ghost w-full" type="submit">
                   Log
                 </button>
@@ -729,9 +1051,26 @@ export function CrmApp({ brandId }: { brandId: string }) {
               <div className="mt-3 space-y-3">
                 {activities.map((a) => (
                   <div key={a.id} className="border-l-2 border-violet/30 pl-3">
-                    <div className="text-sm font-medium">{a.title}</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        className="field py-1 text-sm font-medium"
+                        defaultValue={a.title}
+                        onBlur={(e) => {
+                          if (e.target.value !== a.title) patchActivity.mutate({ id: a.id, body: { title: e.target.value } });
+                        }}
+                      />
+                      <button className="text-[11px] text-clay" onClick={() => removeActivity.mutate(a.id)}>
+                        Delete
+                      </button>
+                    </div>
                     <div className="text-xs text-clay">{a.kind} · {fmtDate(a.created_at)}</div>
-                    <p className="mt-1 text-xs text-ink/70">{a.body}</p>
+                    <textarea
+                      className="field mt-1 min-h-12 text-xs"
+                      defaultValue={a.body}
+                      onBlur={(e) => {
+                        if (e.target.value !== a.body) patchActivity.mutate({ id: a.id, body: { body: e.target.value } });
+                      }}
+                    />
                   </div>
                 ))}
               </div>

@@ -29,17 +29,36 @@ export default function PmHomePage() {
   const [key, setKey] = useState("");
   const [description, setDescription] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
 
   const invite = useMutation({
     mutationFn: () =>
-      pmApi(`/workspaces/${workspace!.id}/members`, {
+      pmApi<{ temporary_password?: string | null }>(`/workspaces/${workspace!.id}/members`, {
         method: "POST",
-        body: JSON.stringify({ email: inviteEmail, role: "member" }),
+        body: JSON.stringify({ email: inviteEmail, display_name: inviteName, role: "member" }),
       }),
-    onSuccess: () => {
+    onSuccess: (row) => {
       setInviteEmail("");
+      setInviteName("");
+      setTempPassword(row.temporary_password || null);
       qc.invalidateQueries({ queryKey: ["pm-me"] });
     },
+  });
+  const saveProject = useMutation({
+    mutationFn: () =>
+      pmApi(`/projects/${editId}`, { method: "PATCH", body: JSON.stringify({ name: editName, description: editDesc }) }),
+    onSuccess: () => {
+      setEditId(null);
+      qc.invalidateQueries({ queryKey: ["pm-projects", workspace?.id] });
+    },
+  });
+  const removeProject = useMutation({
+    mutationFn: (projectId: string) => pmApi(`/projects/${projectId}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pm-projects", workspace?.id] }),
   });
 
   const create = useMutation({
@@ -112,17 +131,58 @@ export default function PmHomePage() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {projects.map((p) => (
-          <Link key={p.id} href={`/pm/projects/${p.id}`} className="card block p-5 hover:border-violet/40">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-serif text-2xl">{p.name}</h2>
-              {pmPill(p.key)}
-            </div>
-            <p className="mt-2 line-clamp-2 text-sm text-clay">{p.description || "No description"}</p>
-            <p className="mt-4 text-xs text-clay">
-              {p.feature_count} features · {p.issue_count} issues
-              {p.sweety_brand_id ? " · linked from God Mode" : ""}
-            </p>
-          </Link>
+          <article key={p.id} className="card p-5">
+            {editId === p.id ? (
+              <div className="space-y-2">
+                <input className="field" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                <textarea className="field" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                <div className="flex gap-2">
+                  <button className="btn-primary" onClick={() => saveProject.mutate()}>
+                    Save
+                  </button>
+                  <button className="btn-ghost" onClick={() => setEditId(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link href={`/pm/projects/${p.id}`} className="block hover:text-violet">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-serif text-2xl">{p.name}</h2>
+                    {pmPill(p.key)}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-sm text-clay">{p.description || "No description"}</p>
+                </Link>
+                <p className="mt-4 text-xs text-clay">
+                  {p.feature_count} features · {p.issue_count} issues
+                  {p.sweety_brand_id ? " · linked from God Mode" : ""}
+                </p>
+                {workspace?.can_create_features && (
+                  <div className="mt-3 flex gap-3 text-xs">
+                    <button
+                      className="text-violet"
+                      onClick={() => {
+                        setEditId(p.id);
+                        setEditName(p.name);
+                        setEditDesc(p.description);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-clay"
+                      onClick={() => {
+                        if (confirm(`Delete ${p.key}?`)) removeProject.mutate(p.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </article>
         ))}
       </div>
 
@@ -139,15 +199,24 @@ export default function PmHomePage() {
             <input
               className="field mt-1 w-64"
               type="email"
-              placeholder="they@team.com (must register first)"
+              placeholder="they@team.com"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
             />
           </label>
+          <label className="text-sm">
+            Name
+            <input className="field mt-1 w-40" value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+          </label>
           <button className="btn-ghost" disabled={invite.isPending}>
-            Add to workspace
+            Invite user
           </button>
           {invite.isError && <p className="text-sm text-violet">{invite.error.message}</p>}
+          {tempPassword && (
+            <p className="text-sm text-moss">
+              Temporary password: <strong>{tempPassword}</strong>
+            </p>
+          )}
         </form>
       )}
 

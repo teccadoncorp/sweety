@@ -281,6 +281,18 @@ export type CrmActivity = {
   created_at: string;
 };
 
+export type CrmLineItem = {
+  id: string;
+  deal_id: string;
+  name: string;
+  sku: string;
+  qty: number;
+  unit_price_usd: string;
+  notes: string;
+  deal_name?: string;
+  created_at: string;
+};
+
 export type SwarmQueued = { queued: number; agent_ids: string[]; reason: string };
 
 export type CommandAgent = {

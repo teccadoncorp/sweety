@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.models.brand import Brand
-from app.models.crm import CrmAccount, CrmActivity, CrmContact, CrmDeal, DEAL_STAGES, STAGE_PROBABILITY
+from app.models.crm import CrmAccount, CrmActivity, CrmContact, CrmDeal, CrmLineItem, DEAL_STAGES, STAGE_PROBABILITY
 from app.models.user import User
 from app.schemas.crm import (
     AccountIn,
@@ -15,6 +15,10 @@ from app.schemas.crm import (
     AccountUpdate,
     ActivityIn,
     ActivityOut,
+    ActivityUpdate,
+    LineItemIn,
+    LineItemOut,
+    LineItemUpdate,
     ContactIn,
     ContactOut,
     ContactUpdate,
@@ -354,6 +358,8 @@ def delete_deal(
         raise HTTPException(status_code=404, detail="Deal not found")
     for act in db.scalars(select(CrmActivity).where(CrmActivity.deal_id == deal_id)):
         act.deal_id = None
+    for item in db.scalars(select(CrmLineItem).where(CrmLineItem.deal_id == deal_id)):
+        db.delete(item)
     db.delete(row)
     db.commit()
     return {"ok": True}
@@ -428,6 +434,129 @@ def create_activity(
     db.commit()
     db.refresh(row)
     return row
+
+
+@router.patch("/activities/{activity_id}", response_model=ActivityOut)
+def update_activity(
+    brand_id: UUID,
+    activity_id: UUID,
+    payload: ActivityUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CrmActivity:
+    _brand(db, brand_id, user)
+    row = db.get(CrmActivity, activity_id)
+    if row is None or row.brand_id != brand_id:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    _apply(row, payload.model_dump(exclude_unset=True))
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@router.delete("/activities/{activity_id}")
+def delete_activity(
+    brand_id: UUID,
+    activity_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    _brand(db, brand_id, user)
+    row = db.get(CrmActivity, activity_id)
+    if row is None or row.brand_id != brand_id:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+def _decorate_line(db: Session, row: CrmLineItem) -> dict:
+    deal = db.get(CrmDeal, row.deal_id)
+    return {
+        "id": row.id,
+        "brand_id": row.brand_id,
+        "deal_id": row.deal_id,
+        "name": row.name,
+        "sku": row.sku,
+        "qty": row.qty,
+        "unit_price_usd": row.unit_price_usd,
+        "notes": row.notes,
+        "deal_name": deal.name if deal else "",
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+    }
+
+
+@router.get("/cart", response_model=list[LineItemOut])
+def list_cart(
+    brand_id: UUID,
+    deal_id: UUID | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[dict]:
+    _brand(db, brand_id, user)
+    stmt = select(CrmLineItem).where(CrmLineItem.brand_id == brand_id)
+    if deal_id:
+        stmt = stmt.where(CrmLineItem.deal_id == deal_id)
+    rows = db.scalars(stmt.order_by(CrmLineItem.created_at.desc())).all()
+    return [_decorate_line(db, row) for row in rows]
+
+
+@router.post("/cart", response_model=LineItemOut)
+def create_cart_item(
+    brand_id: UUID,
+    payload: LineItemIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    _brand(db, brand_id, user)
+    deal = db.get(CrmDeal, payload.deal_id)
+    if deal is None or deal.brand_id != brand_id:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    row = CrmLineItem(brand_id=brand_id, **payload.model_dump())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _decorate_line(db, row)
+
+
+@router.patch("/cart/{item_id}", response_model=LineItemOut)
+def update_cart_item(
+    brand_id: UUID,
+    item_id: UUID,
+    payload: LineItemUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    _brand(db, brand_id, user)
+    row = db.get(CrmLineItem, item_id)
+    if row is None or row.brand_id != brand_id:
+        raise HTTPException(status_code=404, detail="Cart item not found")
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("deal_id"):
+        deal = db.get(CrmDeal, data["deal_id"])
+        if deal is None or deal.brand_id != brand_id:
+            raise HTTPException(status_code=404, detail="Deal not found")
+    _apply(row, data)
+    db.commit()
+    db.refresh(row)
+    return _decorate_line(db, row)
+
+
+@router.delete("/cart/{item_id}")
+def delete_cart_item(
+    brand_id: UUID,
+    item_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    _brand(db, brand_id, user)
+    row = db.get(CrmLineItem, item_id)
+    if row is None or row.brand_id != brand_id:
+        raise HTTPException(status_code=404, detail="Cart item not found")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/ai/brief")

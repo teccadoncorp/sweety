@@ -193,3 +193,42 @@ class SwarmQueued(BaseModel):
     queued: int
     agent_ids: list[UUID]
     reason: str = "Swarm queued"
+
+
+class ActivityUpdate(BaseModel):
+    kind: str | None = None
+    title: str | None = None
+    body: str | None = None
+    due_at: datetime | None = None
+
+
+class LineItemIn(BaseModel):
+    deal_id: UUID
+    name: str
+    sku: str = ""
+    qty: int = Field(default=1, ge=1)
+    unit_price_usd: Decimal = Decimal("0")
+    notes: str = ""
+
+
+class LineItemUpdate(BaseModel):
+    name: str | None = None
+    sku: str | None = None
+    qty: int | None = Field(default=None, ge=1)
+    unit_price_usd: Decimal | None = None
+    notes: str | None = None
+    deal_id: UUID | None = None
+
+
+class LineItemOut(ORMModel):
+    id: UUID
+    brand_id: UUID
+    deal_id: UUID
+    name: str
+    sku: str
+    qty: int
+    unit_price_usd: Decimal
+    notes: str
+    deal_name: str = ""
+    created_at: datetime
+    updated_at: datetime | None = None

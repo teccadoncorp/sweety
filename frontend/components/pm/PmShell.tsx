@@ -31,6 +31,14 @@ export function PmShell({
   }, [router]);
 
   useEffect(() => {
+    if (!getPmToken()) return;
+    const beat = () => pmApi("/auth/heartbeat", { method: "POST" }).catch(() => undefined);
+    beat();
+    const id = window.setInterval(beat, 45_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
@@ -57,6 +65,7 @@ export function PmShell({
       label: "Console",
       items: [
         { href: "/pm", label: "Projects", match: "exact" },
+        { href: "/pm/people", label: "People", match: "prefix" },
         ...(workspace?.can_create_features
           ? [{ href: "/pm/godmode", label: "God Mode", match: "prefix" as const }]
           : []),
@@ -70,7 +79,8 @@ export function PmShell({
       label: "Project",
       items: [
         { href: base, label: "Board", match: "exact" },
-        { href: `${base}/features`, label: "Features", match: "prefix" },
+        { href: `${base}/features`, label: "Epics", match: "prefix" },
+        { href: `${base}/report`, label: "Reports", match: "prefix" },
       ],
     });
   }
@@ -226,8 +236,12 @@ export function pmPill(status: string) {
     review: "bg-violet/15 text-violet",
     done: "bg-moss/15 text-moss",
     story: "bg-cyan/10 text-cyan",
+    epic: "bg-violet/15 text-violet",
+    ticket: "bg-cyan/10 text-cyan",
+    subticket: "bg-paper text-clay",
     task: "bg-paper text-clay",
     bug: "bg-violet/15 text-violet",
+    overdue: "bg-violet/15 text-violet",
     godmode: "bg-violet/10 text-violet",
     pm_godmode: "bg-violet/10 text-violet",
     human: "bg-paper text-clay",

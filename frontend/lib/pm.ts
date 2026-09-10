@@ -63,7 +63,10 @@ export type PmMember = {
   email: string;
   display_name: string;
   role: string;
+  online?: boolean;
+  last_seen_at?: string | null;
   created_at: string;
+  temporary_password?: string | null;
 };
 
 export type PmMe = {
@@ -111,6 +114,9 @@ export type PmIssue = {
   id: string;
   project_id: string;
   feature_id: string | null;
+  parent_id: string | null;
+  parent_key: string;
+  subticket_count: number;
   key: string;
   number: number;
   title: string;
@@ -125,6 +131,7 @@ export type PmIssue = {
   feature_title: string;
   feature_key: string;
   due_date: string | null;
+  overdue: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -148,6 +155,15 @@ export type PmBoard = {
   can_create_features: boolean;
 };
 
+export type PmReport = {
+  totals: Record<string, number>;
+  by_status: Record<string, number>;
+  by_kind: Record<string, number>;
+  by_assignee: { assignee_id: string | null; name: string; open: number; done: number }[];
+  by_epic: { id: string; key: string; title: string; status: string; open: number; done: number; pct: number }[];
+  overdue: PmIssue[];
+};
+
 export type PmChatMessage = {
   id: string;
   role: string;
@@ -157,10 +173,16 @@ export type PmChatMessage = {
 };
 
 export const ISSUE_COLUMNS = ["backlog", "todo", "in_progress", "review", "done"] as const;
-export const ISSUE_KINDS = ["story", "task", "bug"] as const;
+export const ISSUE_KINDS = ["epic", "story", "ticket", "task", "bug", "subticket"] as const;
 export const FEATURE_STATUSES = ["backlog", "planned", "in_progress", "done"] as const;
 export const PRIORITY_LABELS = ["Urgent", "High", "Medium", "Low", "None"];
 
 export function priorityLabel(n: number) {
   return PRIORITY_LABELS[n] || "Medium";
+}
+
+export function presenceLabel(member: PmMember) {
+  if (member.online) return "Online";
+  if (!member.last_seen_at) return "Never seen";
+  return `Seen ${new Date(member.last_seen_at).toLocaleString()}`;
 }

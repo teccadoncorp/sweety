@@ -5,7 +5,7 @@ from app.models.brand import Brand
 from app.models.campaign import Campaign
 from app.models.connector import Connector
 from app.models.content import ContentItem
-from app.models.crm import CrmAccount, CrmActivity, CrmContact, CrmDeal
+from app.models.crm import CrmAccount, CrmActivity, CrmContact, CrmDeal, CrmLineItem
 from app.models.godmode import GodModeMessage
 from app.models.heartbeat_run import HeartbeatRun
 from app.models.mcp_server import McpServer
@@ -43,6 +43,7 @@ __all__ = [
     "CrmContact",
     "CrmDeal",
     "CrmActivity",
+    "CrmLineItem",
     "ContentItem",
     "Notification",
     "PmUser",

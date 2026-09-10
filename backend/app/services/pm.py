@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from uuid import UUID
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import ProgrammingError
@@ -162,6 +164,21 @@ def user_workspaces(db: Session, user: PmUser) -> list[dict]:
     return out
 
 
+def is_online(user: PmUser | None) -> bool:
+    if user is None or user.last_seen_at is None:
+        return False
+    seen = user.last_seen_at
+    if seen.tzinfo is None:
+        seen = seen.replace(tzinfo=UTC)
+    return datetime.now(UTC) - seen <= timedelta(minutes=3)
+
+
+def touch_presence(db: Session, user: PmUser) -> None:
+    user.last_seen_at = datetime.now(UTC)
+    db.add(user)
+    db.commit()
+
+
 def decorate_member(db: Session, row: PmWorkspaceMember) -> dict:
     user = db.get(PmUser, row.user_id)
     return {
@@ -170,6 +187,8 @@ def decorate_member(db: Session, row: PmWorkspaceMember) -> dict:
         "email": user.email if user else "",
         "display_name": display_of(user),
         "role": row.role,
+        "online": is_online(user),
+        "last_seen_at": user.last_seen_at if user else None,
         "created_at": row.created_at,
     }
 
@@ -239,10 +258,16 @@ def decorate_issue(db: Session, issue: PmIssue, project: PmProject | None = None
     feature = db.get(PmFeature, issue.feature_id) if issue.feature_id else None
     assignee = db.get(PmUser, issue.assignee_id) if issue.assignee_id else None
     reporter = db.get(PmUser, issue.reporter_id) if issue.reporter_id else None
+    parent = db.get(PmIssue, issue.parent_id) if getattr(issue, "parent_id", None) else None
+    subs = db.scalar(select(func.count()).select_from(PmIssue).where(PmIssue.parent_id == issue.id)) or 0
+    overdue = bool(issue.due_date and issue.status != "done" and issue.due_date < datetime.now(UTC).date())
     return {
         "id": issue.id,
         "project_id": issue.project_id,
         "feature_id": issue.feature_id,
+        "parent_id": getattr(issue, "parent_id", None),
+        "parent_key": issue_key(project, parent) if parent else "",
+        "subticket_count": subs,
         "key": issue_key(project, issue),
         "number": issue.number,
         "title": issue.title,
@@ -257,6 +282,7 @@ def decorate_issue(db: Session, issue: PmIssue, project: PmProject | None = None
         "feature_title": feature.title if feature else "",
         "feature_key": feature_key(project, feature) if feature else "",
         "due_date": issue.due_date,
+        "overdue": overdue,
         "sort_order": issue.sort_order,
         "created_at": issue.created_at,
         "updated_at": issue.updated_at,
@@ -333,6 +359,7 @@ def create_issue(
     assignee_id: UUID | None = None,
     reporter_id: UUID | None = None,
     due_date=None,
+    parent_id: UUID | None = None,
     source_reporter: UUID | None = None,
 ) -> PmIssue:
     if kind not in ISSUE_KINDS:
@@ -343,9 +370,16 @@ def create_issue(
         feature = db.get(PmFeature, feature_id)
         if feature is None or feature.project_id != project.id:
             raise HTTPException(status_code=400, detail="Feature not in this project")
+    if parent_id:
+        parent = db.get(PmIssue, parent_id)
+        if parent is None or parent.project_id != project.id:
+            raise HTTPException(status_code=400, detail="Parent ticket not in this project")
+        if kind != "subticket":
+            kind = "subticket"
     issue = PmIssue(
         project_id=project.id,
         feature_id=feature_id,
+        parent_id=parent_id,
         number=next_issue_number(db, project.id),
         title=title.strip() or "Untitled",
         description=description or "",
@@ -439,3 +473,60 @@ def seed_pm_if_empty(db: Session) -> None:
         first.status = "in_progress"
         first.assignee_id = user.id
     db.commit()
+
+
+def project_report(db: Session, project: PmProject) -> dict:
+    issues = list(db.scalars(select(PmIssue).where(PmIssue.project_id == project.id)).all())
+    features = list(db.scalars(select(PmFeature).where(PmFeature.project_id == project.id)).all())
+    by_status = {status: 0 for status in ISSUE_STATUSES}
+    by_kind = {kind: 0 for kind in ISSUE_KINDS}
+    assignee_map: dict[str, dict] = {}
+    overdue_rows = []
+    for issue in issues:
+        by_status[issue.status] = by_status.get(issue.status, 0) + 1
+        by_kind[issue.kind] = by_kind.get(issue.kind, 0) + 1
+        key = str(issue.assignee_id or "unassigned")
+        bucket = assignee_map.setdefault(
+            key, {"assignee_id": issue.assignee_id, "name": "Unassigned", "open": 0, "done": 0}
+        )
+        if issue.assignee_id:
+            bucket["name"] = display_of(db.get(PmUser, issue.assignee_id))
+        if issue.status == "done":
+            bucket["done"] += 1
+        else:
+            bucket["open"] += 1
+        decorated = decorate_issue(db, issue, project)
+        if decorated["overdue"]:
+            overdue_rows.append(decorated)
+    by_epic = []
+    for feature in features:
+        kids = [i for i in issues if i.feature_id == feature.id]
+        done = sum(1 for i in kids if i.status == "done")
+        by_epic.append(
+            {
+                "id": str(feature.id),
+                "key": feature_key(project, feature),
+                "title": feature.title,
+                "status": feature.status,
+                "open": len(kids) - done,
+                "done": done,
+                "pct": round(100 * done / len(kids)) if kids else 0,
+            }
+        )
+    return {
+        "totals": {
+            "issues": len(issues),
+            "epics": len(features),
+            "stories": by_kind.get("story", 0),
+            "tickets": by_kind.get("ticket", 0) + by_kind.get("task", 0),
+            "bugs": by_kind.get("bug", 0),
+            "subtickets": by_kind.get("subticket", 0),
+            "done": by_status.get("done", 0),
+            "overdue": len(overdue_rows),
+        },
+        "by_status": by_status,
+        "by_kind": by_kind,
+        "by_assignee": list(assignee_map.values()),
+        "by_epic": by_epic,
+        "overdue": overdue_rows,
+    }
