@@ -44,9 +44,11 @@ export default function LoginPage() {
     <div className="login-shell">
       <LoginScene />
       <div className="login-content">
-        <header className="login-brand">
-          <span className="login-mark">{appName.slice(0, 1)}</span>
-          <span>{appName}</span>
+        <header>
+          <Link href="/" className="login-brand">
+            <span className="login-mark">{appName.slice(0, 1)}</span>
+            <span>{appName}</span>
+          </Link>
         </header>
 
         <div className="login-split">

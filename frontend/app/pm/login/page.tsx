@@ -49,9 +49,11 @@ export default function PmLoginPage() {
     <div className="login-shell">
       <LoginScene />
       <div className="login-content">
-        <header className="login-brand">
-          <span className="login-mark">W</span>
-          <span>Task console</span>
+        <header>
+          <Link href="/" className="login-brand">
+            <span className="login-mark">W</span>
+            <span>Task console</span>
+          </Link>
         </header>
 
         <div className="login-split">

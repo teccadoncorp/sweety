@@ -10,7 +10,7 @@ const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
   title: `${appName} — marketing control plane`,
-  description: "A board for your marketing agents.",
+  description: "Brief the CMO. Ship features. Agents run the work. You keep consent and the kill switch.",
 };
 
 export const viewport: Viewport = {
