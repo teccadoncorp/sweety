@@ -11,6 +11,16 @@ from app.models.heartbeat_run import HeartbeatRun
 from app.models.mcp_server import McpServer
 from app.models.media_asset import MediaAsset
 from app.models.notification import Notification
+from app.models.pm import (
+    PmComment,
+    PmFeature,
+    PmGodModeMessage,
+    PmIssue,
+    PmProject,
+    PmUser,
+    PmWorkspace,
+    PmWorkspaceMember,
+)
 from app.models.task import Task
 from app.models.usage import UsageEvent
 from app.models.user import User
@@ -35,4 +45,12 @@ __all__ = [
     "CrmActivity",
     "ContentItem",
     "Notification",
+    "PmUser",
+    "PmWorkspace",
+    "PmWorkspaceMember",
+    "PmProject",
+    "PmFeature",
+    "PmIssue",
+    "PmComment",
+    "PmGodModeMessage",
 ]

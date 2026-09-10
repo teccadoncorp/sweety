@@ -108,28 +108,7 @@ export default function BrandPage() {
         />
       )}
       <div className="mb-8 flex flex-wrap gap-3">
-        <Link href={`/brands/${id}/godmode`} className="btn-primary">
-          CMO God Mode
-        </Link>
-        <Link href={`/brands/${id}/approvals`} className="btn-ghost">
-          Approvals
-        </Link>
-        <Link href={`/brands/${id}/calendar`} className="btn-ghost">
-          Calendar
-        </Link>
-        <Link href={`/brands/${id}/crm`} className="btn-ghost">
-          Neural CRM
-        </Link>
-        <Link href={`/brands/${id}/command`} className="btn-ghost">
-          Command radar
-        </Link>
-        <Link href={`/brands/${id}/studio`} className="btn-ghost">
-          Agent studio
-        </Link>
-        <Link href={`/brands/${id}/connect`} className="btn-ghost">
-          Connectors
-        </Link>
-        <button className="btn-ghost" onClick={() => swarm.mutate()}>
+        <button className="btn-primary" onClick={() => swarm.mutate()}>
           Wake all agents
         </button>
         <button className="btn-ghost" onClick={() => expand.mutate()}>

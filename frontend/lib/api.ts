@@ -66,6 +66,8 @@ export type Brand = {
   monthly_budget_usd: string;
   spent_usd: string;
   created_at: string;
+  campaigns_count?: number;
+  launch_campaign?: string;
 };
 
 export type ChatMessage = {

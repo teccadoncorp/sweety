@@ -70,6 +70,8 @@ class BrandOut(ORMModel):
     monthly_budget_usd: Decimal
     created_at: datetime
     spent_usd: Decimal = Decimal("0")
+    campaigns_count: int = 0
+    launch_campaign: str = ""
 
 
 class KillSwitchIn(BaseModel):

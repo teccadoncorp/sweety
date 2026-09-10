@@ -4,9 +4,69 @@ import { KillSwitch } from "@/components/KillSwitch";
 import { NotificationBell } from "@/components/NotificationBell";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { clearToken, getToken } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { api, Brand, clearToken, getToken } from "@/lib/api";
 import { useAppName } from "@/lib/branding";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type NavItem = { href: string; label: string; match?: "exact" | "prefix" };
+
+function brandNav(brandId: string): { label: string; items: NavItem[] }[] {
+  const base = `/brands/${brandId}`;
+  return [
+    {
+      label: "Console",
+      items: [
+        { href: `${base}/command`, label: "Command", match: "prefix" },
+        { href: `${base}/godmode`, label: "God Mode", match: "prefix" },
+      ],
+    },
+    {
+      label: "Work",
+      items: [
+        { href: `${base}/approvals`, label: "Approvals", match: "prefix" },
+        { href: `${base}/calendar`, label: "Calendar", match: "prefix" },
+        { href: `${base}/studio`, label: "Studio", match: "prefix" },
+      ],
+    },
+    {
+      label: "Brand",
+      items: [
+        { href: `${base}/crm`, label: "CRM", match: "prefix" },
+        { href: base, label: "Org", match: "exact" },
+        { href: `${base}/connect`, label: "Connectors", match: "prefix" },
+      ],
+    },
+  ];
+}
+
+function itemActive(pathname: string, item: NavItem) {
+  if (item.match === "exact") return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+function NavLink({
+  item,
+  pathname,
+  onClick,
+}: {
+  item: NavItem;
+  pathname: string;
+  onClick?: () => void;
+}) {
+  const active = itemActive(pathname, item);
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={`flex items-center rounded-lg px-3 py-2 text-sm ${
+        active ? "bg-violet text-white" : "text-ink/80 hover:bg-paper hover:text-ink"
+      }`}
+    >
+      {item.label}
+    </Link>
+  );
+}
 
 export function Shell({
   children,
@@ -20,59 +80,81 @@ export function Shell({
   const pathname = usePathname();
   const router = useRouter();
   const appName = useAppName();
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
   }, [router]);
 
-  const navClass = (active: boolean) => (active ? "text-cyan" : "text-clay hover:text-ink");
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const { data: brand } = useQuery({
+    queryKey: ["brand", brandId],
+    queryFn: () => api<Brand>(`/brands/${brandId}`),
+    enabled: Boolean(brandId),
+  });
+
+  const groups = brandId ? brandNav(brandId) : [];
+  const topClass = (active: boolean) =>
+    active ? "text-violet font-medium" : "text-clay hover:text-ink";
+
+  const sidebar = brandId ? (
+    <nav className="flex h-full flex-col">
+      <div className="border-b border-line px-4 py-4">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-clay">Working on</p>
+        <p className="mt-1 truncate font-serif text-lg text-ink">{brand?.name || "Brand"}</p>
+      </div>
+      <div className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-[0.16em] text-clay">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink key={item.href} item={item} pathname={pathname} onClick={() => setOpen(false)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {brandId && (
+        <div className="space-y-2 border-t border-line p-3">
+          <KillSwitch brandId={brandId} />
+        </div>
+      )}
+    </nav>
+  ) : null;
 
   return (
     <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
-      <header className="z-20 shrink-0 border-b border-line bg-white shadow-sm">
+      <header className="z-30 shrink-0 border-b border-line bg-white">
         <div className="h-0.5 w-full bg-violet" />
-        <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-3 px-4 py-3 sm:items-center sm:px-6">
-          <Link href="/brands" className="shrink-0 pt-0.5 text-lg font-semibold tracking-tight text-violet sm:text-xl">
+        <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
+          {brandId && (
+            <button
+              type="button"
+              className="rounded-lg border border-line px-2.5 py-1.5 text-sm text-ink lg:hidden"
+              onClick={() => setOpen((v) => !v)}
+              aria-label="Open menu"
+            >
+              Menu
+            </button>
+          )}
+          <Link href="/brands" className="shrink-0 text-lg font-semibold tracking-tight text-violet">
             {appName}
           </Link>
-          <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3 gap-y-1.5 text-xs sm:gap-x-4 sm:text-sm">
-            <Link className={navClass(pathname === "/brands")} href="/brands">
+          <nav className="ml-auto flex min-w-0 items-center gap-x-4 text-sm">
+            <Link className={topClass(pathname === "/brands")} href="/brands">
               Brands
             </Link>
-            {brandId && (
-              <>
-                <Link className={navClass(pathname.endsWith("/godmode"))} href={`/brands/${brandId}/godmode`}>
-                  God Mode
-                </Link>
-                <Link className={navClass(pathname.includes("/command"))} href={`/brands/${brandId}/command`}>
-                  Command
-                </Link>
-                <Link className={navClass(pathname.includes("/approvals"))} href={`/brands/${brandId}/approvals`}>
-                  Approvals
-                </Link>
-                <Link className={navClass(pathname.includes("/calendar"))} href={`/brands/${brandId}/calendar`}>
-                  Calendar
-                </Link>
-                <Link className={navClass(pathname.includes("/crm"))} href={`/brands/${brandId}/crm`}>
-                  CRM
-                </Link>
-                <Link className={navClass(pathname === `/brands/${brandId}`)} href={`/brands/${brandId}`}>
-                  Org
-                </Link>
-                <Link className={navClass(pathname.includes("/studio"))} href={`/brands/${brandId}/studio`}>
-                  Studio
-                </Link>
-                <Link
-                  className={navClass(pathname.includes("/connect"))}
-                  href={`/brands/${brandId}/connect`}
-                >
-                  Connectors
-                </Link>
-                <NotificationBell brandId={brandId} />
-                <KillSwitch brandId={brandId} compact />
-              </>
-            )}
-            <Link className={navClass(pathname === "/settings")} href="/settings">
+            {brandId && <NotificationBell brandId={brandId} />}
+            <Link className={topClass(pathname.startsWith("/pm"))} href="/pm">
+              Tasks
+            </Link>
+            <Link className={topClass(pathname === "/settings")} href="/settings">
               Settings
             </Link>
             <button
@@ -87,15 +169,38 @@ export function Shell({
           </nav>
         </div>
       </header>
-      <main
-        className={
-          full
-            ? "relative flex min-h-0 flex-1 flex-col overflow-hidden"
-            : "mx-auto w-full min-w-0 max-w-6xl flex-1 overflow-x-hidden overflow-y-auto px-4 py-6 sm:px-6 sm:py-8"
-        }
-      >
-        {children}
-      </main>
+
+      <div className="relative flex min-h-0 flex-1">
+        {brandId && (
+          <aside className="hidden w-56 shrink-0 border-r border-line bg-white lg:block">{sidebar}</aside>
+        )}
+        {brandId && open && (
+          <div className="absolute inset-0 z-20 lg:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-ink/20"
+              aria-label="Close menu"
+              onClick={() => setOpen(false)}
+            />
+            <aside className="relative z-10 h-full w-64 max-w-[80vw] border-r border-line bg-white shadow-card">
+              {sidebar}
+            </aside>
+          </div>
+        )}
+        <main
+          className={
+            full
+              ? "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              : "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+          }
+        >
+          {full ? (
+            children
+          ) : (
+            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

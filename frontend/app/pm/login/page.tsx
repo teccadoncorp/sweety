@@ -5,20 +5,19 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { LoginScene } from "@/components/LoginScene";
 import { WorkInline } from "@/components/WorkLoader";
-import { api, setToken } from "@/lib/api";
-import { useAppName } from "@/lib/branding";
+import { pmApi, setPmToken, setPmWorkspaceId } from "@/lib/pm";
 
 const PILLARS = [
-  { k: "01", t: "Mission to campaign", d: "The CMO opens a real first campaign the moment a brand is created." },
-  { k: "02", t: "Consent before live", d: "Every draft waits on the board. Nothing publishes until you approve it." },
-  { k: "03", t: "One kill switch", d: "Pause every agent instantly. Resume when the room is ready." },
+  { k: "01", t: "Separate console", d: "Its own login and board. Marketing stays on God Mode." },
+  { k: "02", t: "Features first", d: "God Mode writes epics. The team turns them into issues." },
+  { k: "03", t: "Same database", d: "Lives in the pm schema — isolated tables, shared Postgres." },
 ];
 
-export default function LoginPage() {
+export default function PmLoginPage() {
   const router = useRouter();
-  const appName = useAppName();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,12 +27,18 @@ export default function LoginPage() {
     setError("");
     setBusy(true);
     try {
-      const data = await api<{ access_token: string }>(`/auth/${mode}`, {
+      const data = await pmApi<{ access_token: string }>(`/auth/${mode}`, {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          ...(mode === "register" ? { display_name: displayName } : {}),
+        }),
       });
-      setToken(data.access_token);
-      router.push("/brands");
+      setPmToken(data.access_token);
+      const me = await pmApi<{ workspaces: { id: string }[] }>("/auth/me");
+      if (me.workspaces[0]) setPmWorkspaceId(me.workspaces[0].id);
+      router.push("/pm");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
       setBusy(false);
@@ -45,20 +50,20 @@ export default function LoginPage() {
       <LoginScene />
       <div className="login-content">
         <header className="login-brand">
-          <span className="login-mark">{appName.slice(0, 1)}</span>
-          <span>{appName}</span>
+          <span className="login-mark">W</span>
+          <span>Task console</span>
         </header>
 
         <div className="login-split">
           <section className="login-copy">
-            <p className="login-kicker">Marketing control plane</p>
+            <p className="login-kicker">Project management</p>
             <h1 className="login-title">
-              Brief the CMO.
+              Features in.
               <br />
-              Watch the org run.
+              Work on the board.
             </h1>
             <p className="login-lede">
-              Strategy, drafts, calendar, and publish — with a human on the consent gate. Agents work. You decide what goes live.
+              A Jira-style workspace with projects, features, and issues. God Mode creates the features. You ship them.
             </p>
             <ul className="login-pillars">
               {PILLARS.map((item) => (
@@ -76,11 +81,7 @@ export default function LoginPage() {
           <section className="login-panel">
             <form onSubmit={onSubmit} className="login-card">
               <div className="login-tabs">
-                <button
-                  type="button"
-                  className={mode === "login" ? "is-on" : ""}
-                  onClick={() => setMode("login")}
-                >
+                <button type="button" className={mode === "login" ? "is-on" : ""} onClick={() => setMode("login")}>
                   Sign in
                 </button>
                 <button
@@ -91,9 +92,11 @@ export default function LoginPage() {
                   Create account
                 </button>
               </div>
-              <h2>{mode === "login" ? "Enter the board" : "Stand up a board"}</h2>
+              <h2>{mode === "login" ? "Open the console" : "Join the board"}</h2>
               <p className="login-card-lede">
-                {mode === "login" ? "Use your board email to open God Mode." : "A new org starts from your first brand mission."}
+                {mode === "login"
+                  ? "Task console accounts are separate from marketing God Mode."
+                  : "New accounts join the default workspace as members."}
               </p>
               <label>
                 Email
@@ -101,12 +104,23 @@ export default function LoginPage() {
                   className="field"
                   type="email"
                   autoComplete="email"
-                  placeholder="you@brand.com"
+                  placeholder="you@team.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </label>
+              {mode === "register" && (
+                <label>
+                  Display name
+                  <input
+                    className="field"
+                    placeholder="Alex"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                </label>
+              )}
               <label>
                 Password
                 <input
@@ -120,23 +134,23 @@ export default function LoginPage() {
                 />
               </label>
               {error && <p className="login-error">{error}</p>}
-              {busy && <WorkInline label={mode === "login" ? "Opening the board" : "Creating your board"} />}
+              {busy && <WorkInline label={mode === "login" ? "Opening the console" : "Creating your account"} />}
               <button className="btn-primary login-submit" type="submit" disabled={busy}>
-                {mode === "login" ? "Enter God Mode" : "Create account"}
+                {mode === "login" ? "Enter console" : "Create account"}
               </button>
               <button
                 type="button"
                 className="login-demo"
                 onClick={() => {
-                  setEmail("board@sweety.local");
-                  setPassword("sweety");
+                  setEmail("contact@cpdash.ai");
+                  setPassword("supersecret123");
                   setMode("login");
                 }}
               >
                 Fill demo credentials
               </button>
-              <Link href="/pm/login" className="login-demo" style={{ display: "block", textAlign: "center" }}>
-                Open the Task console instead
+              <Link href="/login" className="login-demo" style={{ display: "block", textAlign: "center" }}>
+                Marketing God Mode login
               </Link>
             </form>
           </section>

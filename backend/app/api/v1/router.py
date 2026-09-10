@@ -14,6 +14,7 @@ from app.api.v1 import (
     godmode,
     meta,
     notifications,
+    pm,
     runs,
     tasks,
 )
@@ -34,3 +35,4 @@ api_router.include_router(command.router)
 api_router.include_router(meta.router)
 api_router.include_router(content.router)
 api_router.include_router(notifications.router)
+api_router.include_router(pm.router)

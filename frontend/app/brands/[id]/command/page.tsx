@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { KillSwitch } from "@/components/KillSwitch";
 import { RunningWork } from "@/components/RunningWork";
 import { Shell, money, pill } from "@/components/Shell";
 import { WorkLoader } from "@/components/WorkLoader";
@@ -39,20 +38,16 @@ export default function CommandPage() {
       {(swarm.isPending || wake.isPending || expand.isPending) && (
         <WorkLoader label={swarm.isPending ? "Dispatching swarm" : "Sending pulse"} />
       )}
-      <p className="text-xs uppercase tracking-[0.28em] text-cyan">Mission control</p>
+      <p className="text-xs uppercase tracking-[0.28em] text-cyan">Console</p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">Command radar</h1>
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">Command</h1>
         <div className="flex flex-wrap gap-2">
-          <KillSwitch brandId={id} />
           <button className="btn-primary" onClick={() => swarm.mutate()} disabled={Boolean(data?.agents_paused)}>
             Wake all
           </button>
           <button className="btn-ghost" onClick={() => expand.mutate()}>
             Expand org
           </button>
-          <Link href={`/brands/${id}/studio`} className="btn-ghost">
-            Studio
-          </Link>
         </div>
       </div>
       {data?.agents_paused && (

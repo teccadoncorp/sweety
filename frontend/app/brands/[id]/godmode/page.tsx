@@ -12,7 +12,7 @@ import { api, Brand, ChatMessage, publicAsset } from "@/lib/api";
 const STARTERS = [
   "Launch a 2-week Spring Edit campaign across email and Instagram.",
   "I need a product-hunt style launch for our iOS app next month.",
-  "Research competitors and draft a positioning brief before we spend.",
+  "Create a product feature in the Task console for referral rewards, with stories.",
 ];
 
 const PLATFORMS = [

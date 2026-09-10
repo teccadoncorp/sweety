@@ -128,8 +128,9 @@ def attach_launch_tasks(db: Session, brand: Brand, campaign: Campaign) -> list[U
                 assignee_agent_id=cmo.id,
                 title="Write campaign brief and task tree",
                 description=(
-                    "This campaign was opened from the brand mission. Checkout this task. "
-                    "Write a real campaign brief (positioning, audience, channel mix, first 2 weeks). "
+                    f"This campaign was opened automatically from the brand mission.\n\n"
+                    f"Mission: {brand.mission or '(not set)'}\n\n"
+                    "Checkout this task. Write a real campaign brief (positioning, audience, channel mix, first 2 weeks). "
                     "Save it with post_artifact(kind=campaign-brief). Request board approval. "
                     "Delegate a first-post task to the copywriter if one is not already open."
                 ),

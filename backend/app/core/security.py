@@ -17,20 +17,30 @@ def verify_password(password: str, hashed: str) -> bool:
     return pwd_context.verify(password, hashed)
 
 
-def create_access_token(user_id: UUID) -> str:
+def create_access_token(user_id: UUID, audience: str = "sweety") -> str:
     settings = get_settings()
     expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_expire_minutes)
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire},
+        {"sub": str(user_id), "exp": expire, "aud": audience},
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )
 
 
-def decode_token(token: str) -> UUID | None:
+def decode_token(token: str, audience: str | None = None) -> UUID | None:
     settings = get_settings()
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        options = {"verify_aud": False} if audience is None else {}
+        kwargs = {"audience": audience} if audience else {}
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+            options=options,
+            **kwargs,
+        )
+        if audience is None and payload.get("aud") == "pm":
+            return None
         sub = payload.get("sub")
         if not sub:
             return None

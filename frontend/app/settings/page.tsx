@@ -115,7 +115,7 @@ function SettingsBody() {
           </label>
         </div>
         <p className="mb-4 text-sm text-clay">
-          Prefer the brand <strong>Connectors</strong> tab in the top nav — social login lives there.
+          Prefer the brand <strong>Connectors</strong> item in the sidebar — social login lives there.
         </p>
         {selected ? <ConnectorsPanel brandId={selected} /> : <p className="text-sm text-clay">Create a brand first.</p>}
       </div>

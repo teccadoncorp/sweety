@@ -9,6 +9,9 @@ from app.models.agent import Agent
 from app.models.brand import Brand
 from app.models.user import User
 from app.services.crm import seed_demo_crm
+from app.services.pm import seed_pm_if_empty
+
+DEMO_BRAND_NAME = "Sweety Demo"
 
 DEFAULT_ORG = [
     {
@@ -192,34 +195,13 @@ def seed_demo_if_empty(db: Session) -> None:
     settings = get_settings()
     if db.scalar(select(User.id).limit(1)) is not None:
         expand_all_orgs(db)
+        seed_pm_if_empty(db)
         return
     if not settings.seed_demo:
+        seed_pm_if_empty(db)
         return
 
     user = User(email=settings.seed_email, hashed_password=hash_password(settings.seed_password))
     db.add(user)
-    db.flush()
-
-    brand = Brand(
-        owner_id=user.id,
-        name="Sweety Demo",
-        mission="Help independent beauty and wellness brands launch campaigns that feel human, not templated.",
-        voice_notes="Warm, precise, a little playful. No hype adjectives. Speak like a sharp creative director.",
-        audience="Independent beauty and wellness founders who want campaigns that feel human.",
-        guidelines="No hype adjectives. No invented claims. Ask before publishing anything live.",
-        monthly_budget_usd=Decimal("80"),
-    )
-    db.add(brand)
-    db.flush()
-    agents = ensure_default_org(db, brand)
-
-    from app.services.loop import spawn_launch_campaign
-
-    spawn_launch_campaign(
-        db,
-        brand,
-        name="Brand Launch — Spring Edit",
-        goal="Launch the Spring Edit collection to email and social in two weeks, with a coherent brief the board can approve.",
-        budget_cap_usd=Decimal("20"),
-    )
     db.commit()
+    seed_pm_if_empty(db)

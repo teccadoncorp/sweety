@@ -55,6 +55,25 @@ GODMODE_EXTRA_TOOLS = [
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_pm_feature",
+            "description": "Create a product Feature (epic) in the standalone Task console. Use this for product/engineering work, not marketing campaign tasks. Optionally attach user stories.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "description": {"type": "string"},
+                    "stories": {
+                        "type": "string",
+                        "description": "Newline-separated user stories to create under the feature",
+                    },
+                },
+                "required": ["title"],
+            },
+        },
+    },
 ]
 
 
@@ -109,6 +128,28 @@ class GodModeExecutor(ToolExecutor):
             run_agent_heartbeat.delay(str(agent.id), "godmode-swarm")
         return {"ok": True, "queued": len(rows), "roles": [a.role for a in rows]}
 
+    def create_pm_feature(self, title: str, description: str = "", stories: str = "") -> dict:
+        from app.services.pm import create_feature, decorate_feature, ensure_pm_project_for_brand
+
+        project = ensure_pm_project_for_brand(self.db, self.brand)
+        story_list = [line.strip() for line in (stories or "").splitlines() if line.strip()]
+        feature = create_feature(
+            self.db,
+            project,
+            title=title,
+            description=description,
+            source="godmode",
+            stories=story_list,
+        )
+        payload = decorate_feature(self.db, feature, project)
+        return {
+            "ok": True,
+            "feature": payload,
+            "project_key": project.key,
+            "workspace": "Sweety",
+            "hint": "Open /pm to work this feature in the Task console.",
+        }
+
 
 def _image_urls_from_trace(trace: list) -> list[str]:
     urls: list[str] = []
@@ -162,8 +203,9 @@ The human will describe what they want in plain language. You:
 2. A first campaign is already opened from the mission if one was missing. Checkout or inspect it, write the brief, and make sure the copywriter has a first-post task. Use create_campaign only for additional campaigns.
 3. Use tools to create tasks, then wake the right agents — or wake_all_agents to run the swarm in parallel.
 4. You can score CRM leads and move deals with CRM tools.
-5. Reply in clean Markdown (headings, lists, bold). The UI renders it.
-6. Nothing publishes without board approval. After drafts exist, tell the human to open Approvals.
+5. When the board wants a product feature, epic, or engineering work item (not a marketing campaign task), call create_pm_feature. That lands in the separate Task console at /pm.
+6. Reply in clean Markdown (headings, lists, bold). The UI renders it.
+7. Nothing publishes without board approval. After drafts exist, tell the human to open Approvals.
 
 Images:
 - If they want a visual, FIRST ask which platform to post on: Instagram feed, Instagram story/reel, X/Twitter, LinkedIn, Facebook, Reddit, Pinterest, or TikTok.
